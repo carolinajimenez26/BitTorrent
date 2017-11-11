@@ -36,11 +36,7 @@ int toInt(string s) {
 
 // TODO
 string getIp() {
-	return "ip";
-}
-
-void setRange(int &myId, int otherId) {
-	
+	return "";
 }
 
 int main(int argc, char** argv) {
@@ -49,10 +45,10 @@ int main(int argc, char** argv) {
 		cout << "Missing arguments" << endl;
 		return 1;
 	}
-	string a(argv[1]);
-	string b(argv[2]);
-	string server_port = "tcp://*:555" + a;
-	string client_port = "tcp://localhost:555" + b;
+
+	string port = "555" + string(argv[1]);
+	string server_port = "tcp://*:" + port;
+	string client_port = "tcp://localhost:555" + string(argv[2]);
 
   context ctx;
 	socket s_server(ctx, socket_type::rep); //Listening
@@ -67,13 +63,13 @@ int main(int argc, char** argv) {
   pol.add(s_server);
   pol.add(s_client);
 
-  int myId = getRandom(), predecessorId;
+  int myId = getRandom(), sucessorId;
 	dbg(myId);
 
 	int i = 0;
 
-	string myIp = getIp(), ipSucessor, ipPredecessor, currentNode, nextNode; //ip's
-	bool id_flag = false;
+	string myIp = getIp(), ipSucessor; //ip's
+	bool id_flag = false, other_flag = false;
 
 	message m;
 	m << "What's your ID?";
@@ -83,7 +79,7 @@ int main(int argc, char** argv) {
     if (pol.poll()) {
       if (pol.has_input(s_client)) {
 				message m, n;
-				string ans, server_id, server_ip;
+				string ans, server_id, server_ip, s_port;
         s_client.receive(m);
         m >> ans;
 				cout << "Receiving from server -> " << ans << endl;
@@ -91,22 +87,25 @@ int main(int argc, char** argv) {
 				if (ans == "My ID is") {
 					m >> server_id;
 					cout << " " << server_id << endl;
-					setRange(myId, toInt(server_id));
+					sucessorId = toInt(server_id);
 					id_flag = true;
 				}
-				if (ans == "My IP is") {
+				if (ans == "My IP and PORT is") {
 					m >> server_ip;
-					cout << " " << server_ip << endl;
+					m >> s_port;
+					cout << " " << server_ip << " : " << s_port << endl;
 					ipSucessor = server_ip;
+					server_port = s_port;
 				}
 
 				if (!id_flag) {
 					n << "What's your ID?";
 					s_client.send(n);
 				}
-				if (id_flag){
-					n << "What's your IP?";
+				if (id_flag and !other_flag){
+					n << "What's your IP and PORT?";
 					s_client.send(n);
+					other_flag = true;
 				}
       }
       if (pol.has_input(s_server)) {
@@ -120,8 +119,8 @@ int main(int argc, char** argv) {
 					n << "My ID is" << toString(myId);
 					s_server.send(n);
 				}
-				if (ans == "What's your IP?") {
-					n <<  "My IP is" << myIp;
+				if (ans == "What's your IP and PORT?") {
+					n <<  "My IP and PORT is" << myIp << port;
 					s_server.send(n);
 				}
 				// if (ans == "IP predecessor") {
@@ -133,8 +132,8 @@ int main(int argc, char** argv) {
 
       }
     }
-		i++;
-		if (i == 6) break;
+		// i++;
+		// if (i == 6) break;
   }
 
 	return 0;
