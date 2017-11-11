@@ -34,6 +34,15 @@ int toInt(string s) {
   return out;
 }
 
+// TODO
+string getIp() {
+	return "ip";
+}
+
+void setRange(int &myId, int otherId) {
+	
+}
+
 int main(int argc, char** argv) {
 
 	if(argc != 3){
@@ -63,7 +72,8 @@ int main(int argc, char** argv) {
 
 	int i = 0;
 
-	string ipSucessor, ipPredecessor, currentNode, nextNode; //ip's
+	string myIp = getIp(), ipSucessor, ipPredecessor, currentNode, nextNode; //ip's
+	bool id_flag = false;
 
 	message m;
 	m << "What's your ID?";
@@ -73,18 +83,31 @@ int main(int argc, char** argv) {
     if (pol.poll()) {
       if (pol.has_input(s_client)) {
 				message m, n;
-				string ans, id;
+				string ans, server_id, server_ip;
         s_client.receive(m);
         m >> ans;
 				cout << "Receiving from server -> " << ans << endl;
 
 				if (ans == "My ID is") {
-					m >> id;
-					cout << " " << id << endl;
+					m >> server_id;
+					cout << " " << server_id << endl;
+					setRange(myId, toInt(server_id));
+					id_flag = true;
+				}
+				if (ans == "My IP is") {
+					m >> server_ip;
+					cout << " " << server_ip << endl;
+					ipSucessor = server_ip;
 				}
 
-				n << "What's your ID?";
-				s_client.send(n);
+				if (!id_flag) {
+					n << "What's your ID?";
+					s_client.send(n);
+				}
+				if (id_flag){
+					n << "What's your IP?";
+					s_client.send(n);
+				}
       }
       if (pol.has_input(s_server)) {
 				string ans;
@@ -96,10 +119,17 @@ int main(int argc, char** argv) {
 				if (ans == "What's your ID?") {
 					n << "My ID is" << toString(myId);
 					s_server.send(n);
-				} else {
-					n << "Error";
+				}
+				if (ans == "What's your IP?") {
+					n <<  "My IP is" << myIp;
 					s_server.send(n);
 				}
+				// if (ans == "IP predecessor") {
+				// 	m >> predecessor_ip;
+				// 	cout << " " << predecessor_ip << endl;
+				// 	ipPredecessor = predecessor_ip;
+				// 	ipPredecessor = true;
+				// }
 
       }
     }
