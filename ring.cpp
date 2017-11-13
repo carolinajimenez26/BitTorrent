@@ -37,18 +37,13 @@ int toInt(string s) {
 
 int main(int argc, char** argv) {
 
-	if(argc != 6){
-		cout << "Usage: \"<local ip>\" \"<local port>\" \"<remote ip>\" \"<remote port>\" \"<true or false>\"" << endl;
+	if(argc != 5){
+		cout << "Usage: \"<local ip>\" \"<local port>\" \"<remote ip>\" \"<remote port>\"" << endl;
 		return 1;
 	}
 
 	string myIp(argv[1]), myPort(argv[2]), ipSucessor(argv[3]), portSucessor(argv[4]);
-	string ipPredecessor = "", portPredecessor = "";
-
-	string b(argv[5]);
-	if (b == "true") { // base case, first 2 nodes
-		ipPredecessor = ipSucessor, portPredecessor = portSucessor;
-	}
+	string ipPredecessor = ipSucessor, portPredecessor = portSucessor;
 
 	string tcp = "tcp://";
 	string server_endPoint = tcp + myIp + ":" + myPort; // e.g: "tcp://*:5555";
@@ -68,7 +63,7 @@ int main(int argc, char** argv) {
   pol.add(s_server);
   pol.add(s_client);
 
-  int myId = 15, sucessorId = -1, predecessorId = -1;
+  int myId = getRandom(), sucessorId = -1, predecessorId = -1;
 	dbg(myId);
 
 	int i = 0;
