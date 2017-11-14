@@ -34,14 +34,23 @@ int toInt(string s) {
   return out;
 }
 
+bool inTheRange(int left, int right, int i) {
+	if ((i > left and i <= range_to) or (i >= range_from and i < right)) return true;
+	return false;
+}
+
 
 int main(int argc, char** argv) {
 
-	if(argc != 5){
-		cout << "Usage: \"<local ip>\" \"<local port>\" \"<remote ip>\" \"<remote port>\"" << endl;
+	if(argc != 6){
+		cout << "Usage: \"<local ip>\" \"<local port>\" \"<remote ip>\" \"<remote port>\" \"<base case (true or false)>\"" << endl;
 		return 1;
 	}
-
+	bool baseCase = false;
+	if (argv[5] == "true") {
+		baseCase = true;
+	}
+	dbg(baseCase);
 	string myIp(argv[1]), myPort(argv[2]), ipSucessor(argv[3]), portSucessor(argv[4]);
 	string ipPredecessor = ipSucessor, portPredecessor = portSucessor;
 
@@ -64,6 +73,7 @@ int main(int argc, char** argv) {
   pol.add(s_client);
 
   int myId = getRandom(), sucessorId = -1, predecessorId = -1;
+	// myId = 3;
 	dbg(myId);
 
 	int i = 0;
@@ -101,10 +111,27 @@ int main(int argc, char** argv) {
 							n << "Now I am your predecessor" << toString(myId); // << myIp << myPort;
 							s_client.send(n);
 							continue;
-						} else { // keep going through the ring
-							n << "What's your sucessor IP and PORT";
-							s_client.send(n);
-							id_flag = true;
+						} else {
+
+							if ((toInt(server_predecessor_id) > sucessorId) and !baseCase) { // in the end of the range
+								cout << "Entraaa" << endl;
+								cout << "In the range? " << inTheRange(toInt(server_predecessor_id),sucessorId, myId) << endl;
+
+								if (inTheRange(toInt(server_predecessor_id), sucessorId, myId)) {
+									// connect between predecessorId and server_id
+									predecessorId = toInt(server_predecessor_id);
+									n << "Now I am your predecessor" << toString(myId); // << myIp << myPort;
+									s_client.send(n);
+									continue;
+								}
+
+							} else { // keep going through the ring
+								n << "What's your sucessor IP and PORT";
+								s_client.send(n);
+								id_flag = true;
+
+							}
+
 						}
 					}
 					if (ans == "My sucessor IP and PORT is") {
@@ -191,8 +218,9 @@ int main(int argc, char** argv) {
 				if (ans == "Now I am your sucessor") {
 					m >> c_ipSucessor >> c_portSucessor >> c_id;
 					n << "Ok";
+					dbg(c_ipSucessor); dbg(c_portSucessor); dbg(c_id);
 					s_server.send(n);
-					if (c_portSucessor != portSucessor) {// if (c_ipSucessor != ipSucessor) {
+					if (c_portSucessor != portSucessor and c_portSucessor != myPort) {// if (c_ipSucessor != ipSucessor) {
 						ipSucessor = c_ipSucessor;
 						portSucessor = c_portSucessor;
 						sucessorId = toInt(c_id);
