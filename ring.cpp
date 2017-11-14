@@ -2,6 +2,8 @@
 #include <random>
 #include <sstream>
 #include <zmqpp/zmqpp.hpp>
+#include "lib/zhelpers.hpp"
+#include <thread>
 
 using namespace std;
 using namespace zmqpp;
@@ -9,6 +11,21 @@ using namespace zmqpp;
 #define dbg(x) cout << #x << ": " << x << endl
 
 const int range_from = 0, range_to = 30;
+
+void messageToSubscriber(string &text){
+	context ctx;
+	socket s_susbscriber(ctx, socket_type::req); //Asking
+	s_susbscriber.connect("tcp://localhost:5563");
+	while(true){
+		if (text != ""){
+			message m;
+			m << text;
+			s_susbscriber.send(m);
+			s_susbscriber.receive(m);
+			text = "";
+		}
+	}
+}
 
 int getRandom() {
 	random_device rand_dev;
@@ -37,7 +54,7 @@ int toInt(string s) {
 
 int main(int argc, char** argv) {
 
-	if(argc != 5){
+	if(argc != 6){
 		cout << "Usage: \"<local ip>\" \"<local port>\" \"<remote ip>\" \"<remote port>\"" << endl;
 		return 1;
 	}
@@ -63,8 +80,12 @@ int main(int argc, char** argv) {
   pol.add(s_server);
   pol.add(s_client);
 
-  int myId = getRandom(), sucessorId = -1, predecessorId = -1;
+
+  int myId = toInt(argv[5]), sucessorId = -1, predecessorId = -1;
 	dbg(myId);
+
+	string toSusbcriber = "Message since node with id: " + toString(myId);
+  	thread t1(messageToSubscriber, ref(toSusbcriber));
 
 	int i = 0;
 
@@ -76,15 +97,15 @@ int main(int argc, char** argv) {
 
   while (true) {
 		dbg(i);
-    if (pol.poll()) {
+	if (pol.poll()) {
 
 			if (pol.has_input(s_client)) {
 
 				message m, n;
 				string ans, server_predecessor_id, s_sucessorId, s_ipSucessor, s_portSucessor,
 							 server_predecessor_ip, server_predecessor_port, server_predecessor_endPoint;
-        s_client.receive(m);
-        m >> ans;
+		s_client.receive(m);
+		m >> ans;
 				cout << "Receiving from server -> " << ans << endl;
 
 				if (!enteredToRing) {
@@ -129,6 +150,9 @@ int main(int argc, char** argv) {
 							dbg(predecessorId);
 							dbg(client_endPoint);
 							cout << "---------------------------" << endl;
+
+							toSusbcriber = toString(myId) + " Entered to the ring, predecessorId: " 
+										+ toString(predecessorId) + ", sucessorId: " + toString(sucessorId);
 						}
 					}
 					if (ans == "Now you are my predecessor") {
@@ -164,13 +188,13 @@ int main(int argc, char** argv) {
 					}
 				}
 
-      }
+	  }
 
-      if (pol.has_input(s_server)) {
+	  if (pol.has_input(s_server)) {
 
 				string ans, c_ipSucessor, c_portSucessor, c_id;
 				message m, n;
-        s_server.receive(m);
+		s_server.receive(m);
 				m >> ans;
 				cout << "Receiving from client -> " << ans << endl;
 
@@ -203,8 +227,8 @@ int main(int argc, char** argv) {
 						s_client.connect(client_endPoint);
 					}
 				}
-      }
-    }
+	  }
+	}
 		i++;
 		if (i == 20) break;
   }
