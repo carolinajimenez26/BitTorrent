@@ -42,15 +42,11 @@ bool inTheRange(int left, int right, int i) {
 
 int main(int argc, char** argv) {
 
-	if(argc != 6){
-		cout << "Usage: \"<local ip>\" \"<local port>\" \"<remote ip>\" \"<remote port>\" \"<base case (true or false)>\"" << endl;
+	if(argc != 5){
+		cout << "Usage: \"<local ip>\" \"<local port>\" \"<remote ip>\" \"<remote port>\"" << endl;
 		return 1;
 	}
-	bool baseCase = false;
-	if (argv[5] == "true") {
-		baseCase = true;
-	}
-	dbg(baseCase);
+	
 	string myIp(argv[1]), myPort(argv[2]), ipSucessor(argv[3]), portSucessor(argv[4]);
 	string ipPredecessor = ipSucessor, portPredecessor = portSucessor;
 
@@ -73,7 +69,7 @@ int main(int argc, char** argv) {
   pol.add(s_client);
 
   int myId = getRandom(), sucessorId = -1, predecessorId = -1;
-	// myId = 3;
+	// myId = 28;
 	dbg(myId);
 
 	int i = 0;
@@ -113,7 +109,7 @@ int main(int argc, char** argv) {
 							continue;
 						} else {
 
-							if ((toInt(server_predecessor_id) > sucessorId) and !baseCase) { // in the end of the range
+							if ((toInt(server_predecessor_id) > sucessorId) and (toInt(server_predecessor_id) != myId)) { // in the end of the range
 								cout << "Entraaa" << endl;
 								cout << "In the range? " << inTheRange(toInt(server_predecessor_id),sucessorId, myId) << endl;
 
@@ -126,6 +122,7 @@ int main(int argc, char** argv) {
 								}
 
 							} else { // keep going through the ring
+								cout << "Elseeee" << endl;
 								n << "What's your sucessor IP and PORT";
 								s_client.send(n);
 								id_flag = true;
@@ -137,15 +134,15 @@ int main(int argc, char** argv) {
 					if (ans == "My sucessor IP and PORT is") {
 						m >> s_ipSucessor;
 						m >> s_portSucessor;
-						if (s_portSucessor != myPort) {// if (s_ipSucessor != myIp) {
-							ipPredecessor = ipSucessor;
+						if (s_portSucessor != myPort and s_portSucessor != portSucessor) {// if (s_ipSucessor != myIp) {
+							ipPredecessor = "localhost";//ipSucessor;
 							portPredecessor = portSucessor;
 							ipSucessor = s_ipSucessor;
 							portSucessor = s_portSucessor;
 							cout << ipSucessor << ":" << portSucessor << endl;
 							// connect
 							s_client.disconnect(client_endPoint);
-							client_endPoint = tcp + "localhost" + ":" + portSucessor;//tcp + ipSucessor + ":" + portSucessor;
+							client_endPoint = tcp + ipSucessor + ":" + portSucessor;
 							s_client.connect(client_endPoint);
 							id_flag = false;
 						} else {
@@ -160,10 +157,11 @@ int main(int argc, char** argv) {
 					}
 					if (ans == "Now you are my predecessor") {
 						m >> server_predecessor_ip >> server_predecessor_port;
+						server_predecessor_ip = "localhost";
 						server_predecessor_endPoint = tcp + server_predecessor_ip + ":" + server_predecessor_port;
 						dbg(server_predecessor_endPoint);
 						dbg(client_endPoint);
-						if (server_predecessor_endPoint != client_endPoint) {
+						if (server_predecessor_port != myPort and server_predecessor_port != portPredecessor) { // if (server_predecessor_endPoint != client_endPoint)
 							s_client.disconnect(client_endPoint);
 							s_client.connect(server_predecessor_endPoint);
 						}
@@ -171,7 +169,7 @@ int main(int argc, char** argv) {
 						l << "Now I am your sucessor" << myIp << myPort << toString(myId);
 						s_client.send(l);
 						cout << "Sended!" << endl;
-						if (server_predecessor_endPoint != client_endPoint) {
+						if (server_predecessor_port != myPort and server_predecessor_port != portPredecessor) { // if (server_predecessor_endPoint != client_endPoint)
 							s_client.disconnect(server_predecessor_endPoint);
 							s_client.connect(client_endPoint);
 						}
@@ -218,15 +216,15 @@ int main(int argc, char** argv) {
 				if (ans == "Now I am your sucessor") {
 					m >> c_ipSucessor >> c_portSucessor >> c_id;
 					n << "Ok";
-					dbg(c_ipSucessor); dbg(c_portSucessor); dbg(c_id);
+					// dbg(c_ipSucessor); dbg(c_portSucessor); dbg(c_id);
 					s_server.send(n);
 					if (c_portSucessor != portSucessor and c_portSucessor != myPort) {// if (c_ipSucessor != ipSucessor) {
-						ipSucessor = c_ipSucessor;
+						ipSucessor = "localhost";//c_ipSucessor;
 						portSucessor = c_portSucessor;
 						sucessorId = toInt(c_id);
 						cout << "Disconnecting from " << client_endPoint << endl;
 						s_client.disconnect(client_endPoint);
-						client_endPoint = tcp + "localhost" + ":" + portSucessor;// tcp + ipSucessor + ":" + portSucessor;
+						client_endPoint = tcp + ipSucessor + ":" + portSucessor;
 						cout << "Connecting to " << client_endPoint << endl;
 						s_client.connect(client_endPoint);
 					}
@@ -234,7 +232,7 @@ int main(int argc, char** argv) {
       }
     }
 		i++;
-		if (i == 20) break;
+		if (i == 100) break;
   }
 
 	return 0;
