@@ -12,6 +12,8 @@ using namespace zmqpp;
 
 const int range_from = 0, range_to = 30;
 
+string toSusbcriber;
+
 void messageToSubscriber(string &text){
 	context ctx;
 	socket s_susbscriber(ctx, socket_type::req); //Asking
@@ -84,7 +86,7 @@ int main(int argc, char** argv) {
   int myId = toInt(argv[5]), sucessorId = -1, predecessorId = -1;
 	dbg(myId);
 
-	string toSusbcriber = "Message since node with id: " + toString(myId);
+	toSusbcriber = "Node " + toString(myId) + " is connected now";
   	thread t1(messageToSubscriber, ref(toSusbcriber));
 
 	int i = 0;
@@ -153,6 +155,7 @@ int main(int argc, char** argv) {
 
 							toSusbcriber = toString(myId) + " Entered to the ring, predecessorId: " 
 										+ toString(predecessorId) + ", sucessorId: " + toString(sucessorId);
+							
 						}
 					}
 					if (ans == "Now you are my predecessor") {
@@ -179,6 +182,8 @@ int main(int argc, char** argv) {
 						dbg(predecessorId);
 						dbg(client_endPoint);
 						cout << "---------------------------" << endl;
+						toSusbcriber = toString(myId) + " Entered to the ring, predecessorId: " 
+										+ toString(predecessorId) + ", sucessorId: " + toString(sucessorId);
 						continue;
 					}
 
