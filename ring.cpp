@@ -42,7 +42,7 @@ bool inTheRange(int left, int right, int i) {
 
 int main(int argc, char** argv) {
 
-	if(argc != 5){
+	if(argc != 6){
 		cout << "Usage: \"<local ip>\" \"<local port>\" \"<remote ip>\" \"<remote port>\"" << endl;
 		return 1;
 	}
@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
   pol.add(s_server);
   pol.add(s_client);
 
-  int myId = getRandom(), sucessorId = -1, predecessorId = -1;
+  int myId = toInt(argv[5]), sucessorId = -1, predecessorId = -1;
 	// myId = 28;
 	dbg(myId);
 
@@ -104,7 +104,7 @@ int main(int argc, char** argv) {
 						if (myId < sucessorId and myId > toInt(server_predecessor_id)) {
 							// connect between predecessorId and server_id
 							predecessorId = toInt(server_predecessor_id);
-							n << "Now I am your predecessor" << toString(myId); // << myIp << myPort;
+							n << "Now I am your predecessor" << toString(myId) << myIp << myPort;
 							s_client.send(n);
 							continue;
 						} else {
@@ -116,7 +116,7 @@ int main(int argc, char** argv) {
 								if (inTheRange(toInt(server_predecessor_id), sucessorId, myId)) {
 									// connect between predecessorId and server_id
 									predecessorId = toInt(server_predecessor_id);
-									n << "Now I am your predecessor" << toString(myId); // << myIp << myPort;
+									n << "Now I am your predecessor" << toString(myId) << myIp << myPort;
 									s_client.send(n);
 									continue;
 								}
@@ -208,10 +208,17 @@ int main(int argc, char** argv) {
 					s_server.send(n);
 				}
 				if (ans == "Now I am your predecessor") {
-					m >> c_id; // >> IpPredecessor >> portPredecessor;
+					string aux_IpPredecessor, aux_portPredecessor;
+					m >> c_id >> aux_IpPredecessor >> aux_portPredecessor;
 					predecessorId = toInt(c_id);
+					dbg(predecessorId);
+					dbg(portPredecessor);
 					n << "Now you are my predecessor" << ipPredecessor << portPredecessor;
 					s_server.send(n);
+					ipPredecessor = aux_IpPredecessor;
+					portPredecessor = aux_portPredecessor;
+					dbg(predecessorId);
+					dbg(portPredecessor);
 				}
 				if (ans == "Now I am your sucessor") {
 					m >> c_ipSucessor >> c_portSucessor >> c_id;
