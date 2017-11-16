@@ -2,9 +2,22 @@
 #include <iostream>
 #include <zmqpp/zmqpp.hpp>
 #include <vector>
+#include <unordered_map>
 
 using namespace std;
 using namespace zmqpp;
+
+vector<string> split(string s, char tok) { // split a string by a token especified
+ istringstream ss(s);
+  string token;
+  vector<string> v;
+
+  while(getline(ss, token, tok)) {
+  v.push_back(token);
+  }
+
+  return v;
+}
 
 void askInformation(vector<string> &ips, socket &s_client){
 
@@ -34,6 +47,7 @@ int main () {
     poller pol;
     pol.add(s_server);
     message m;
+    vector<string> splitted;
 
     while(true){
         if (pol.poll()) {
@@ -41,8 +55,14 @@ int main () {
                 s_server.receive(m);
                 string text;
                 m >> text;
-                if (text == "out"){
+                splitted = split(text, ':');
+                if (splitted[0] == "out"){
                     cout << "out " << endl;
+                    for(int i = 0; i < ips.size(); i++) {
+                        if (ips[i] == splitted[1]) {
+                            ips.erase(ips.begin() + i);
+                        }
+                    }
                     m << "";
                     s_server.send(m);
                     askInformation(ips, s_client);

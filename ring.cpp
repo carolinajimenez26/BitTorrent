@@ -71,7 +71,7 @@ void enterToTheRing(int &myId, int &predecessorId, int &sucessorId, string &clie
 }
 
 void outOfTheRing(socket &s_client, int &predecessorId, string &ipPredecessor
-	, string &portPredecessor, int &sucessorId, string &ipSucessor, string &portSucessor){
+	, string &portPredecessor, int &sucessorId, string &ipSucessor, string &portSucessor, string &server_endPoint){
 
 	string client_endPoint = "tcp://" + ipSucessor + ":" + portSucessor;
 	string predecessor_endPoint = "tcp://" + ipPredecessor + ":" + portPredecessor;
@@ -92,7 +92,7 @@ void outOfTheRing(socket &s_client, int &predecessorId, string &ipPredecessor
 	s_client.receive(n);
 	cout << "---------------------- Good bye baby -------------------------" << endl;
 		
-	toSusbcriber = "out";
+	toSusbcriber = "out:" + server_endPoint;
 }
 
 
@@ -146,7 +146,7 @@ int main(int argc, char** argv) {
 
 	if (s_interrupted) {
 	    cout << "Ctrl+c was pressed" << endl;
-	    outOfTheRing(s_client, predecessorId,ipPredecessor,portPredecessor, sucessorId, ipSucessor, portSucessor);
+	    outOfTheRing(s_client, predecessorId,ipPredecessor,portPredecessor, sucessorId, ipSucessor, portSucessor, server_endPoint);
 	}
 	if (pol.poll()) {
 
