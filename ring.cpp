@@ -91,7 +91,7 @@ void outOfTheRing(socket &s_client, int &predecessorId, string &ipPredecessor
 	s_client.send(m);
 	s_client.receive(n);
 	cout << "---------------------- Good bye baby -------------------------" << endl;
-	
+		
 	toSusbcriber = "out";
 }
 
@@ -240,6 +240,23 @@ int main(int argc, char** argv) {
 						ipPredecessor = server_predecessor_ip;
 						portPredecessor = server_predecessor_port;
 						enterToTheRing(myId, predecessorId, sucessorId, client_endPoint, enteredToRing, server_endPoint);
+						continue;
+					}
+
+					if (ans == "I'm going out, this is your new predecessor"){
+						m >> server_predecessor_id >> server_predecessor_ip >> server_predecessor_port;
+						predecessorId = toInt(server_predecessor_id);
+						ipPredecessor = server_predecessor_ip;
+						portPredecessor = server_predecessor_port;
+						continue;
+					}
+
+					if (ans == "I'm going out, this is your new sucessor"){
+						string newSucessorId, newIpSucessor, newPortSucessor;
+						m >> newSucessorId >> newIpSucessor >> newPortSucessor;
+						sucessorId = toInt(newSucessorId);
+						ipSucessor = newIpSucessor;
+						portSucessor = newPortSucessor;
 						continue;
 					}
 
