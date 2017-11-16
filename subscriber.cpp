@@ -41,11 +41,18 @@ int main () {
                 s_server.receive(m);
                 string text;
                 m >> text;
-                ips.push_back(text);
-                cout << "Entered " << text << endl;
-                m << "";
-                s_server.send(m);
-                askInformation(ips, s_client);
+                if (text == "out"){
+                    cout << "out " << endl;
+                    m << "";
+                    s_server.send(m);
+                    askInformation(ips, s_client);
+                } else {
+                    ips.push_back(text);
+                    cout << "Entered " << text << endl;
+                    m << "";
+                    s_server.send(m);
+                    askInformation(ips, s_client);
+                }
             }
         }
     }

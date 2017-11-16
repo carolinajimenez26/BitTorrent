@@ -70,6 +70,31 @@ void enterToTheRing(int &myId, int &predecessorId, int &sucessorId, string &clie
 	toSusbcriber = server_endPoint;
 }
 
+void outOfTheRing(socket &s_client, int &predecessorId, string &ipPredecessor
+	, string &portPredecessor, int &sucessorId, string &ipSucessor, string &portSucessor){
+
+	string client_endPoint = "tcp://" + ipSucessor + ":" + portSucessor;
+	string predecessor_endPoint = "tcp://" + ipPredecessor + ":" + portPredecessor;
+	message m, n;
+	
+	m << "I'm going out, this is your new predecessor" 
+	  << toString(predecessorId)
+	  << ipPredecessor
+	  << portPredecessor;
+	s_client.send(m);
+	s_client.receive(n);
+	s_client.disconnect(client_endPoint);
+	m << "I'm going out, this is your new sucessor"
+	  << toString(sucessorId)
+	  << ipSucessor
+	  << portSucessor;
+	s_client.send(m);
+	s_client.receive(n);
+	cout << "---------------------- Good bye baby -------------------------" << endl;
+	
+	toSusbcriber = "out";
+}
+
 
 int main(int argc, char** argv) {
 
@@ -115,8 +140,14 @@ int main(int argc, char** argv) {
 	m << "What's your ID?";
 	s_client.send(m);
 
+	s_catch_signals ();
   while (true) {
 		dbg(i);
+
+	if (s_interrupted) {
+	    cout << "Ctrl+c was pressed" << endl;
+	    outOfTheRing(s_client, predecessorId,ipPredecessor,portPredecessor, sucessorId, ipSucessor, portSucessor);
+	}
 	if (pol.poll()) {
 
 			if (pol.has_input(s_client)) {
