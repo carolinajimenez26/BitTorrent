@@ -77,30 +77,32 @@ void outOfTheRing(socket &s_client, int &predecessorId, string &ipPredecessor
 	string predecessor_endPoint = "tcp://" + ipPredecessor + ":" + portPredecessor;
 	message m, n;
 
-	dbg(client_endPoint); dbg(predecessor_endPoint);
+	dbg(client_endPoint); dbg(predecessor_endPoint); dbg(server_endPoint);
 
-	m << "I'm going out, this is your new predecessor"
-	  << toString(predecessorId)
-	  << ipPredecessor
-	  << portPredecessor;
-	s_client.send(m);
-	cout << "Sended: I'm going out, this is your new predecessor " << toString(predecessorId) << endl;
-	s_client.receive(n); // Ok
-	if (client_endPoint != predecessor_endPoint) {
-		cout << "Disconnecting from " << client_endPoint << endl;
-		s_client.disconnect(client_endPoint);
-		cout << "Connecting to " << predecessor_endPoint << endl;
-		s_client.connect(predecessor_endPoint);
+	if (client_endPoint != predecessor_endPoint and predecessor_endPoint != server_endPoint) {
+		m << "I'm going out, this is your new predecessor"
+		  << toString(predecessorId)
+		  << ipPredecessor
+		  << portPredecessor;
+		s_client.send(m);
+		cout << "Sended: I'm going out, this is your new predecessor " << toString(predecessorId) << endl;
+		s_client.receive(n); // Ok
+		if (client_endPoint != predecessor_endPoint) {
+			cout << "Disconnecting from " << client_endPoint << endl;
+			s_client.disconnect(client_endPoint);
+			cout << "Connecting to " << predecessor_endPoint << endl;
+			s_client.connect(predecessor_endPoint);
+		}
+		m << "I'm going out, this is your new sucessor"
+		  << toString(sucessorId)
+		  << ipSucessor
+		  << portSucessor;
+		s_client.send(m);
+		cout << "Sended: I'm going out, this is your new sucessor " << toString(sucessorId) << endl;
+		s_client.receive(n); // Ok
+		cout << "Disconnecting from " << predecessor_endPoint << endl;
+		s_client.disconnect(predecessor_endPoint);
 	}
-	m << "I'm going out, this is your new sucessor"
-	  << toString(sucessorId)
-	  << ipSucessor
-	  << portSucessor;
-	s_client.send(m);
-	cout << "Sended: I'm going out, this is your new sucessor " << toString(sucessorId) << endl;
-	s_client.receive(n); // Ok
-	cout << "Disconnecting from " << predecessor_endPoint << endl;
-	s_client.disconnect(predecessor_endPoint);
 
 	toSusbcriber = "out:" + server_endPoint;
 	cout << "---------------------- Good bye baby -------------------------" << endl;
@@ -124,9 +126,12 @@ void ask(socket &s_client, int &predecessorId, string &ipPredecessor
 			cout << "1 - Exit" << endl;
 			cout << "*************************" << endl;
 			cin >> op;
-			if (op == "1" or op == "Exit") outOfTheRing(s_client, predecessorId, ipPredecessor
+			if (op == "1" or op == "Exit") {
+
+				outOfTheRing(s_client, predecessorId, ipPredecessor
 				, portPredecessor, sucessorId, ipSucessor,  portSucessor, server_endPoint);
 			}
+		}
 	}
 }
 
@@ -243,10 +248,15 @@ int main(int argc, char** argv) {
 									n << "Now I am your predecessor" << toString(myId) << myIp << myPort;
 									s_client.send(n);
 									continue;
+								} else {
+									cout << "Elseeee1!!!!!" << endl;
+									n << "What's your sucessor IP and PORT";
+									s_client.send(n);
+									id_flag = true;
 								}
 
 							} else { // keep going through the ring
-								cout << "Elseeee" << endl;
+								cout << "Elseeee2!!!!!" << endl;
 								n << "What's your sucessor IP and PORT";
 								s_client.send(n);
 								id_flag = true;
