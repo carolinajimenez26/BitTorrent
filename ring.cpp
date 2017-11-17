@@ -194,17 +194,32 @@ int main(int argc, char** argv) {
 
 					message m, n;
 					string ans, server_predecessor_id, server_predecessor_endPoint, s_sucessorId,
-					s_ipSucessor, s_portSucessor, server_predecessor_ip, server_predecessor_port;
+					s_ipSucessor, s_portSucessor, server_predecessor_ip, server_predecessor_port,
+					server_sucessor_endPoint;
 					s_client.receive(m);
 					m >> ans;
 					cout << "Receiving from server -> " << ans << endl;
 
 					if (ans == "My ID is") {
-						m >> s_sucessorId >> server_predecessor_id >> server_predecessor_endPoint;
+						m >> s_sucessorId
+							>> server_predecessor_id
+							>> server_predecessor_endPoint
+							>> server_sucessor_endPoint;
 						sucessorId = toInt(s_sucessorId);
 						dbg(sucessorId);
 						dbg(server_predecessor_id);
 						dbg(server_predecessor_endPoint);
+						dbg(server_sucessor_endPoint);
+
+						if (server_sucessor_endPoint == server_predecessor_endPoint
+								and server_predecessor_endPoint == client_endPoint){ // server connected to himself!
+								cout << "Node is connected to himself!" << endl;
+								predecessorId = toInt(server_predecessor_id);
+								n << "Now I am your predecessor and sucessor" << toString(myId) << myIp << myPort;
+								s_client.send(n);
+								s_client.receive(m);
+								enterToTheRing(myId, predecessorId, sucessorId, client_endPoint, enteredToRing, server_endPoint);
+						}
 
 						if (toInt(server_predecessor_id) == myId or server_predecessor_endPoint == server_endPoint)
 							baseCase = true;
@@ -302,7 +317,7 @@ int main(int argc, char** argv) {
 
 		  if (pol.has_input(s_server)) {
 				cout << "pol.has_input(s_server)" << endl;
-				string ans, c_ipSucessor, c_portSucessor, c_id;
+				string ans, c_ipSucessor, c_portSucessor, c_id, c_ip, c_port;
 				message m, n;
 				s_server.receive(m);
 				m >> ans;
@@ -315,7 +330,10 @@ int main(int argc, char** argv) {
 				}
 
 				if (ans == "What's your ID?") {
-					n << "My ID is" << toString(myId) << toString(predecessorId) << predecessor_endPoint;
+					n << "My ID is" << toString(myId)
+						<< toString(predecessorId)
+						<< predecessor_endPoint
+						<< client_endPoint;
 					s_server.send(n);
 				}
 				if (ans == "What's your sucessor IP and PORT") {
@@ -353,6 +371,24 @@ int main(int argc, char** argv) {
 						cout << "Connecting to " << client_endPoint << endl;
 						s_client.connect(client_endPoint);
 					}
+				}
+				if (ans == "Now I am your predecessor and sucessor") {
+					m >> c_id
+						>> c_ip
+						>> c_port;
+					dbg(c_id); dbg(c_ip); dbg(c_port);
+					predecessorId = toInt(c_id);
+					ipPredecessor = c_ip;
+					portPredecessor = c_port;
+					predecessor_endPoint = tcp + ipPredecessor + ":" + portPredecessor;
+					s_client.disconnect(client_endPoint);
+					sucessorId = predecessorId;
+					ipSucessor = ipPredecessor;
+					portSucessor = portPredecessor;
+					client_endPoint = tcp + ipSucessor + ":" + portSucessor;
+					s_client.connect(client_endPoint);
+					n << "Ok";
+					s_server.send(n);
 				}
 				if (ans == "I'm going out, this is your new predecessor") {
 					string server_predecessor_id, server_predecessor_ip, server_predecessor_port;
