@@ -1,14 +1,14 @@
-#include "lib/zhelpers.hpp"
 #include <iostream>
 #include <zmqpp/zmqpp.hpp>
 #include <vector>
 #include <unordered_map>
+#include <sstream>
 
 using namespace std;
 using namespace zmqpp;
 
 vector<string> split(string s, char tok) { // split a string by a token especified
- istringstream ss(s);
+  istringstream ss(s);
   string token;
   vector<string> v;
 
@@ -51,15 +51,16 @@ int main () {
 
     while(true){
         if (pol.poll()) {
-            if (pol.has_input(s_server)){        
+            if (pol.has_input(s_server)){
                 s_server.receive(m);
                 string text;
                 m >> text;
                 splitted = split(text, ':');
                 if (splitted[0] == "out"){
-                    cout << "out " << endl;
+                    cout << "out " << splitted[1] + splitted[2] << endl;
                     for(int i = 0; i < ips.size(); i++) {
-                        if (ips[i] == splitted[1]) {
+                        if (ips[i] == splitted[1] + splitted[2]) {
+                            cout << "erase: " << ips[i] << endl;
                             ips.erase(ips.begin() + i);
                         }
                     }
