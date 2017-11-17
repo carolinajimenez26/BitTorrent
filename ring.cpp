@@ -84,9 +84,12 @@ void outOfTheRing(socket &s_client, int &predecessorId, string &ipPredecessor
 	  << ipPredecessor
 	  << portPredecessor;
 	s_client.send(m);
-	s_client.receive(n);
+	cout << "Sended: I'm going out, this is your new predecessor " << toString(predecessorId) << endl;
+	s_client.receive(n); // Ok
 	if (client_endPoint != predecessor_endPoint) {
+		cout << "Disconnecting from " << client_endPoint << endl;
 		s_client.disconnect(client_endPoint);
+		cout << "Connecting to " << predecessor_endPoint << endl;
 		s_client.connect(predecessor_endPoint);
 	}
 	m << "I'm going out, this is your new sucessor"
@@ -94,11 +97,13 @@ void outOfTheRing(socket &s_client, int &predecessorId, string &ipPredecessor
 	  << ipSucessor
 	  << portSucessor;
 	s_client.send(m);
-	s_client.receive(n);
+	cout << "Sended: I'm going out, this is your new sucessor " << toString(sucessorId) << endl;
+	s_client.receive(n); // Ok
+	cout << "Disconnecting from " << predecessor_endPoint << endl;
 	s_client.disconnect(predecessor_endPoint);
-	cout << "---------------------- Good bye baby -------------------------" << endl;
 
 	toSusbcriber = "out:" + server_endPoint;
+	cout << "---------------------- Good bye baby -------------------------" << endl;
 	exit(1);
 }
 
@@ -181,16 +186,18 @@ int main(int argc, char** argv) {
 
 			cout << "--------------------poll-------------------" << endl;
 
-			if (pol.has_input(s_client)) {
-				cout << "pol.has_input(s_client)" << endl;
-				message m, n;
-				string ans, server_predecessor_id, server_predecessor_endPoint, s_sucessorId,
-							  s_ipSucessor, s_portSucessor, server_predecessor_ip, server_predecessor_port;
-				s_client.receive(m);
-				m >> ans;
-				cout << "Receiving from server -> " << ans << endl;
+			if (!enteredToRing) {
+					cout << "¿Por qué está entrando?" << endl;
+					if (pol.has_input(s_client)) {
+						cout << "pol.has_input(s_client)" << endl;
 
-				if (!enteredToRing) {
+
+					message m, n;
+					string ans, server_predecessor_id, server_predecessor_endPoint, s_sucessorId,
+					s_ipSucessor, s_portSucessor, server_predecessor_ip, server_predecessor_port;
+					s_client.receive(m);
+					m >> ans;
+					cout << "Receiving from server -> " << ans << endl;
 
 					if (ans == "My ID is") {
 						m >> s_sucessorId >> server_predecessor_id >> server_predecessor_endPoint;
@@ -267,6 +274,7 @@ int main(int argc, char** argv) {
 						message l;
 						l << "Now I am your sucessor" << myIp << myPort << toString(myId);
 						s_client.send(l);
+						s_client.receive(m); // Ok
 						cout << "Sended!" << endl;
 						if (server_predecessor_endPoint != client_endPoint and server_predecessor_endPoint != server_endPoint) { // if (server_predecessor_endPoint != client_endPoint)
 							s_client.disconnect(server_predecessor_endPoint);
@@ -279,16 +287,16 @@ int main(int argc, char** argv) {
 						enterToTheRing(myId, predecessorId, sucessorId, client_endPoint, enteredToRing, server_endPoint);
 					}
 
-					if (enteredToRing) continue;
+					if (enteredToRing) {
+						pol.remove(s_client);
+						continue;
+					}
 
 					if (!id_flag) {
 						n << "What's your ID?";
 						s_client.send(n);
 					}
 
-				} else {
-					//ask(s_client, false);
-					cout << "wiiii" << endl;
 				}
 		  }
 
@@ -349,31 +357,32 @@ int main(int argc, char** argv) {
 				if (ans == "I'm going out, this is your new predecessor") {
 					string server_predecessor_id, server_predecessor_ip, server_predecessor_port;
 					m >> server_predecessor_id >> server_predecessor_ip >> server_predecessor_port;
+					dbg(server_predecessor_id); dbg(server_predecessor_ip); dbg(server_predecessor_port);
 					predecessorId = toInt(server_predecessor_id);
 					ipPredecessor = server_predecessor_ip;
 					portPredecessor = server_predecessor_port;
 					predecessor_endPoint = tcp + ipPredecessor + ":" + portPredecessor;
-					continue;
+					n << "Ok";
+					s_server.send(n);
 				}
 				if (ans == "I'm going out, this is your new sucessor") {
 					string newSucessorId, newIpSucessor, newPortSucessor;
 					m >> newSucessorId >> newIpSucessor >> newPortSucessor;
+					dbg(newSucessorId); dbg(newIpSucessor); dbg(newPortSucessor);
 					sucessorId = toInt(newSucessorId);
 					ipSucessor = newIpSucessor;
 					portSucessor = newPortSucessor;
 					s_client.disconnect(client_endPoint);
 					client_endPoint =tcp + ipSucessor + ":" + portSucessor;
 					s_client.connect(client_endPoint);
-					continue;
+					n << "Ok";
+					s_server.send(n);
 				}
 
 		  }
 		}
 		i++;
 		if (i == 100) break;
-		if (enteredToRing) {
-			cout << "-------:D---------" << endl;
-		}
   }
 
 	return 0;
