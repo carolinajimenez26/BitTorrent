@@ -4,6 +4,7 @@
 #include <zmqpp/zmqpp.hpp>
 #include "lib/zhelpers.hpp"
 #include <thread>
+#include <condition_variable>
 
 using namespace std;
 using namespace zmqpp;
@@ -13,6 +14,9 @@ using namespace zmqpp;
 const int range_from = 0, range_to = 30;
 
 string toSusbcriber = "";
+
+mutex mtx;
+condition_variable cv;
 
 void messageToSubscriber(string &text){
 	context ctx;
@@ -76,20 +80,25 @@ void outOfTheRing(socket &s_client, int &predecessorId, string &ipPredecessor
 	string client_endPoint = "tcp://" + ipSucessor + ":" + portSucessor;
 	string predecessor_endPoint = "tcp://" + ipPredecessor + ":" + portPredecessor;
 	message m, n;
-	
+	cout << "DEBUG A" << endl;
 	m << "I'm going out, this is your new predecessor" 
 	  << toString(predecessorId)
 	  << ipPredecessor
 	  << portPredecessor;
 	s_client.send(m);
+	cout << "DEBUG B" << endl;
 	s_client.receive(n);
+	cout << "DEBUG C" << endl;
 	s_client.disconnect(client_endPoint);
 	m << "I'm going out, this is your new sucessor"
 	  << toString(sucessorId)
 	  << ipSucessor
 	  << portSucessor;
+	cout << "DEBUG D" << endl;
 	s_client.send(m);
+	cout << "DEBUG E" << endl;
 	s_client.receive(n);
+	cout << "DEBUG F" << endl;
 	cout << "---------------------- Good bye baby -------------------------" << endl;
 		
 	toSusbcriber = "out:" + server_endPoint;
@@ -145,8 +154,35 @@ int main(int argc, char** argv) {
 		dbg(i);
 
 	if (s_interrupted) {
+		message x, y;
 	    cout << "Ctrl+c was pressed" << endl;
-	    outOfTheRing(s_client, predecessorId,ipPredecessor,portPredecessor, sucessorId, ipSucessor, portSucessor, server_endPoint);
+	    //outOfTheRing(s_client, predecessorId,ipPredecessor,portPredecessor, sucessorId, ipSucessor, portSucessor, server_endPoint);
+	    //-----------------------------------------------------
+	    x << "I'm going out, this is your new predecessor" 
+		  << toString(predecessorId)
+		  << ipPredecessor
+		  << portPredecessor;
+		s_client.send(x);
+		cout << "DEBUG B" << endl;
+		s_client.receive(y);
+		cout << "DEBUG C" << endl;
+		s_client.disconnect(client_endPoint);
+		x << "I'm going out, this is your new sucessor"
+		  << toString(sucessorId)
+		  << ipSucessor
+		  << portSucessor;
+		cout << "DEBUG D" << endl;
+		s_client.send(x);
+		cout << "DEBUG E" << endl;
+		s_client.receive(y);
+		cout << "DEBUG F" << endl;
+		cout << "---------------------- Good bye baby -------------------------" << endl;
+			
+		toSusbcriber = "out:" + server_endPoint;
+	    //----------------------------------------------------
+
+	    //unique_lock<std::mutex> lck(mtx);
+    	//cv.wait(lck);
 	}
 	if (pol.poll()) {
 
@@ -244,6 +280,7 @@ int main(int argc, char** argv) {
 					}
 
 					if (ans == "I'm going out, this is your new predecessor"){
+						cout << "DEBUG predecessorId" << endl;
 						m >> server_predecessor_id >> server_predecessor_ip >> server_predecessor_port;
 						predecessorId = toInt(server_predecessor_id);
 						ipPredecessor = server_predecessor_ip;

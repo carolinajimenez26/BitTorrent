@@ -55,7 +55,9 @@ int main () {
                 s_server.receive(m);
                 string text;
                 m >> text;
+                cout << "TEXT: " << text << endl;
                 splitted = split(text, ':');
+
                 if (splitted[0] == "out"){
                     cout << "out " << endl;
                     for(int i = 0; i < ips.size(); i++) {
