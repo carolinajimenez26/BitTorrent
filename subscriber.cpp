@@ -26,7 +26,7 @@ void askInformation(vector<string> &ips, socket &s_client, socket &s_publisher){
     cout << "-----------------------------------------------" << endl;
 
     message m, n;
-    string ip, ans;
+    string ip, ans, msg;
     for (int i = 0; i < ips.size(); i++){
         ip = ips[i];
         s_client.connect(ip);
@@ -34,13 +34,14 @@ void askInformation(vector<string> &ips, socket &s_client, socket &s_publisher){
         s_client.send(m);
         s_client.receive(n);
         n >> ans;
+        msg += ans;
+        msg += "\n";
         cout << ans << endl;
         s_client.disconnect(ip);
     }
     cout << "-----------------------------------------------" << endl;
 
     message subs_m;
-    string msg = "hi!";
     subs_m << msg;
     s_publisher.send(subs_m);
     cout << "Sending to publisher " << msg << endl;
