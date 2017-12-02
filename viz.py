@@ -3,9 +3,10 @@ import pygame
 import sys
 import zmq
 import thread
+import os.path
 
-def createGraph(info):
-    dot = Digraph(comment='BitTorrent', format='png')
+def createGraph(info, window, clock):
+    dot = Digraph(comment='BitTorrent', format='jpg')
 
     info = info.split("\n")
     for i in info:
@@ -24,42 +25,46 @@ def createGraph(info):
 
     dot.render('graph.gv', view=False)
 
-def printWindow():
-    pygame.init()
-    clock = pygame.time.Clock()
-    pygame.mouse.set_visible(True)
-
-    while(True):
-        mouse_pos = pygame.mouse.get_pos()
-        events = pygame.event.get()
-
-        for event in events:
-            if event.type == pygame.QUIT:
-                sys.exit()
-
-        background = pygame.image.load('graph.gv.png')
-        window = pygame.display.set_mode(background.get_rect().size, 0, 32)
-        background = background.convert()
-        window.blit(background,(0,0))
-        pygame.display.flip()
-        pygame.display.update()
-        clock.tick(60)
-
-    pygame.display.quit()
+    background = pygame.image.load("graph.gv.jpg")
+    size = background.get_rect().size
+    background = background.convert()
+    window = pygame.display.set_mode(size, 0, 32)
+    window.blit(background,(0,0))
+    pygame.display.update()
+    pygame.display.flip()
+    clock.tick(60)
 
 def main():
+    # ----------------Zmq----------------------------
     context = zmq.Context()
     socket = context.socket(zmq.SUB)
     socket.setsockopt(zmq.SUBSCRIBE, "")
     endPoint = "tcp://localhost:5564"
     print("Connecting to " + endPoint)
     socket.connect(endPoint)
-    thread.start_new_thread(printWindow, ())
+
+    # -------------------Pygame-----------------------
+
+    pygame.init()
+    clock = pygame.time.Clock()
+    pygame.mouse.set_visible(True)
+    pygame.display.set_caption("BitTorrent")
+    window = pygame.display.set_mode((500,500), 0, 32)
 
     while(True):
+        # -------------------Pygame-----------------------
+        events = pygame.event.get()
+
+        for event in events:
+            if event.type == pygame.QUIT:
+                break
+
+        # ----------------Zmq----------------------------
         message = socket.recv()
         print "Recieved %s" % message
-        createGraph(message)
+        createGraph(message, window, clock)
+
+    pygame.display.quit()
 
 
 if __name__ == "__main__":
