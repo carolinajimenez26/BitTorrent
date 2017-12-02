@@ -73,7 +73,9 @@ int main () {
                 s_server.receive(m);
                 string text;
                 m >> text;
+                cout << "TEXT: " << text << endl;
                 splitted = split(text, ':');
+
                 if (splitted[0] == "out"){
                     string ip_aux = splitted[1] + ":" + splitted[2] + ":" + splitted[3];
                     cout << "out " << ip_aux << endl;
