@@ -144,7 +144,7 @@ void whatsYourSucessor(message &n, socket &s_client){
 }
 
 // Tells to the server who I be connected that I am your new predecessor, and sends my info
-void NowIamYourPredecessor(int &predecessorId, string &server_predecessor_id, 
+void NowIamYourPredecessor(int &predecessorId, string &server_predecessor_id,
     message &n, int &myId, string &myIp, string &myPort, socket &s_client){
 
     predecessorId = toInt(server_predecessor_id);
@@ -290,7 +290,7 @@ int main(int argc, char** argv) {
                         if (s_portSucessor != myPort and s_portSucessor != portSucessor) {// if (s_ipSucessor != myIp) {
                             updatePredecessor(ipPredecessor, ipSucessor, portPredecessor, portSucessor, predecessor_endPoint, tcp);
                             updateSuccessor(ipSucessor, s_ipSucessor, portSucessor, s_portSucessor);
-                            
+
                             s_client.disconnect(client_endPoint);
                             client_endPoint = tcp + ipSucessor + ":" + portSucessor;
                             s_client.connect(client_endPoint);
@@ -304,27 +304,27 @@ int main(int argc, char** argv) {
                           >> server_predecessor_port
                           >> server_predecessor_id;
                         server_predecessor_endPoint = tcp + server_predecessor_ip + ":" + server_predecessor_port;
-            
-            if (server_predecessor_endPoint == server_endPoint) {
-              enterToTheRing(myId, predecessorId, sucessorId, client_endPoint, enteredToRing, server_endPoint);
-            } else {
-              if (server_predecessor_endPoint != client_endPoint) { // if (server_predecessor_endPoint != client_endPoint)
-                            s_client.disconnect(client_endPoint);
-                            s_client.connect(server_predecessor_endPoint);
-                        }
-                        message l;
-                        l << "Now I am your sucessor" << myIp << myPort << toString(myId);
-                        s_client.send(l);
-                        s_client.receive(m); // Ok
-                        // cout << "Sended!" << endl;
-                        if (server_predecessor_endPoint != client_endPoint and server_predecessor_endPoint != server_endPoint) { // if (server_predecessor_endPoint != client_endPoint)
-                            s_client.disconnect(server_predecessor_endPoint);
-                            s_client.connect(client_endPoint);
-                        }
-                        predecessorId = toInt(server_predecessor_id);
-                        updatePredecessor(ipPredecessor, server_predecessor_ip, portPredecessor, server_predecessor_port, predecessor_endPoint, tcp);
+
+                      if (server_predecessor_endPoint == server_endPoint) {
                         enterToTheRing(myId, predecessorId, sucessorId, client_endPoint, enteredToRing, server_endPoint);
-            }
+                      } else {
+                        if (server_predecessor_endPoint != client_endPoint) { // if (server_predecessor_endPoint != client_endPoint)
+                                      s_client.disconnect(client_endPoint);
+                                      s_client.connect(server_predecessor_endPoint);
+                                  }
+                                  message l;
+                                  l << "Now I am your sucessor" << myIp << myPort << toString(myId);
+                                  s_client.send(l);
+                                  s_client.receive(m); // Ok
+                                  // cout << "Sended!" << endl;
+                                  if (server_predecessor_endPoint != client_endPoint and server_predecessor_endPoint != server_endPoint) { // if (server_predecessor_endPoint != client_endPoint)
+                                      s_client.disconnect(server_predecessor_endPoint);
+                                      s_client.connect(client_endPoint);
+                                  }
+                                  predecessorId = toInt(server_predecessor_id);
+                                  updatePredecessor(ipPredecessor, server_predecessor_ip, portPredecessor, server_predecessor_port, predecessor_endPoint, tcp);
+                                  enterToTheRing(myId, predecessorId, sucessorId, client_endPoint, enteredToRing, server_endPoint);
+                      }
                     }
 
                     if (enteredToRing) {

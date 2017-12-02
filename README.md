@@ -4,7 +4,7 @@ The objective is to connect all nodes in a ring, all of them connected only
 to another by a socket (*client_endPoint*) and listening in another (*server_endPoint*).
 The nodes must organize themselves in order, so we can have something like this:
 
-... -> 15 -> 11 -> 12 -> 13 -> 14 -> ... 
+... -> 15 -> 11 -> 12 -> 13 -> 14 -> ...
 
 ### To compile
 
@@ -16,13 +16,16 @@ g++ -std=c++11 subscriber.cpp -lzmq -lzmqpp -o subscriber.out
 
 ### To run  
 
+In this order:
+
 ```
+python viz.py
 ./subscriber.out
 ./ring.out "<local ip>" "<local port>" "<remote ip>" "<remote port>" <node identifier (number)>
 
 ```
 
-E.g:
+E.g In ring execution:
 
 ```
 ./ring.out "*" "5552" "localhost" "5553" 11
