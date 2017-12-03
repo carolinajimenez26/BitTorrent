@@ -55,8 +55,14 @@ void outOfTheRing(socket &s_client, Node predecessor, Node sucessor, Node me) {
 
   message m, n;
 
-  if (sucessor.getEndPoint() != predecessor.getEndPoint()
-      and predecessor.getEndPoint() != me.getEndPoint()) {
+  if (sucessor.getEndPoint() == me.getEndPoint()
+      and predecessor.getEndPoint() == me.getEndPoint()) { // connected to myself
+
+    toSusbcriber = "out:" + me.getEndPoint();
+    cout << "---------------------- Good bye baby ----------------------" << endl;
+    exit(1);
+    
+  } else {
 
     m << "I'm going out, this is your new predecessor"
       << toString(predecessor.getId())
@@ -78,11 +84,11 @@ void outOfTheRing(socket &s_client, Node predecessor, Node sucessor, Node me) {
     s_client.receive(n); // Ok
     cout << "Disconnecting from " << predecessor.getEndPoint() << endl;
     s_client.disconnect(predecessor.getEndPoint());
-  }
 
-  toSusbcriber = "out:" + me.getEndPoint();
-  cout << "---------------------- Good bye baby ----------------------" << endl;
-  exit(1);
+    toSusbcriber = "out:" + me.getEndPoint();
+    cout << "---------------------- Good bye baby ----------------------" << endl;
+    exit(1);
+  }
 }
 
 void printInformation(Node me, Node sucessor, Node predecessor) {

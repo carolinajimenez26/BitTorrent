@@ -44,7 +44,7 @@ void askInformation(vector<string> &ips, socket &s_client, socket &s_publisher){
     message subs_m;
     subs_m << msg;
     s_publisher.send(subs_m);
-    cout << "Sending to publisher " << msg << endl;
+    cout << "Sending to publisher " << endl;
 }
 
 int main () {
