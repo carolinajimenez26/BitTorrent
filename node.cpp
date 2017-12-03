@@ -2,6 +2,7 @@
 #include <map>
 using namespace std;
 
+#define INF numeric_limits<int>::max()
 #define dbg(x) cout << #x << ": " << x << endl
 
 class Node {
@@ -49,8 +50,28 @@ public:
   }
 
   void insertInFingerTable(int _id, string _ip, string _port) {
-    fingerTable[_id] = _ip + _port;
+    fingerTable[_id] = _ip + ":" + _port;
   }
+
+	pair<int, string> findSucessor(int _id) {
+		int size = fingerTable.size(), i = 0, delta = 0, delta_min = INF, id_min = -1;
+		for (auto& s : fingerTable) {
+			dbg(_id); dbg(s.first);
+			delta = _id - s.first;
+			if (delta < delta_min) {
+				delta_min = delta;
+				id_min = s.first;
+			}
+			dbg(delta);
+			dbg(delta_min);
+			if (delta_min < 0) {
+				return make_pair(id_min, fingerTable[id_min]);
+			}
+			if (i + 1 == size) { // the last element
+				return make_pair(id_min, fingerTable[id_min]);
+			}
+		}
+	}
 
   void print() {
     cout << "----------------" << endl;

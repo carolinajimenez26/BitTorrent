@@ -138,9 +138,36 @@ void ask(socket &s_client, Node &me, Node &predecessor, Node &sucessor, bool &fl
   }
 }
 
-string findSucessor(int id, Node me, Node sucessor) {
+pair<int, string> findSucessor(int id, Node me, Node sucessor) {
   cout << "findSucessor" << endl;
-  return "";
+  if (me.getId() > sucessor.getId() and
+      inTheRange(sucessor.getId(), me.getId(), id)) { // in the end of the range
+    cout << "In the end of the range" << endl;
+    return make_pair(sucessor.getId(), sucessor.getEndPoint());
+  } else {
+    pair<int, string> new_sucessor = me.findSucessor(id); // id, endPoint
+    dbg(new_sucessor.first); dbg(new_sucessor.second);
+    if (new_sucessor.first > id) { // found it!
+      return new_sucessor;
+    } else { // look for it
+      message m, n;
+      string ans, new_id, new_endPoint;
+
+      context ctx;
+      socket s(ctx, socket_type::req);
+      s.connect("tcp://" + new_sucessor.second);
+      cout << "Connecting to " << "tcp://" + new_sucessor.second << endl;
+
+      m << "Looking for sucessor of "
+        << toString(id);
+      s.send(m);
+      cout << "Sended: Looking for sucessor of " << toString(id) << endl;
+      s.receive(n); // "Found the sucessor. It is "
+      n >> ans >> new_id >> new_endPoint;
+      dbg(ans); dbg(new_id); dbg(new_endPoint);
+      return make_pair(toInt(new_id), new_endPoint);
+    }
+  }
 }
 
 void updateFingerTable(Node &me) {
@@ -153,10 +180,11 @@ void updatePredecessor(Node &predecessor, int id, string ip, string port) {
   predecessor.setPort(port);
 }
 
-void updateSucessor(Node &sucessor, int id, string ip, string port) {
+void updateSucessor(Node &me, Node &sucessor, int id, string ip, string port) {
   sucessor.setId(id);
   sucessor.setIp(ip);
   sucessor.setPort(port);
+  me.insertInFingerTable(sucessor.getId(), sucessor.getIp(), sucessor.getPort());
 }
 
 int main(int argc, char** argv) {
@@ -209,7 +237,7 @@ int main(int argc, char** argv) {
             if (enteredToRing) {
               pol.remove(s_client);
             }
-        }
+        } // TODO: I need to receive the answere of my new sucessor.!
       }
       if (pol.has_input(s_server)) {
         message m;
@@ -238,6 +266,7 @@ int main(int argc, char** argv) {
           dbg(baseCase);
           if (baseCase) {
             sucessor.setId(toInt(id));
+            me.insertInFingerTable(sucessor.getId(), sucessor.getIp(), sucessor.getPort());
             predecessor.setId(toInt(id));
             enterToTheRing(me, sucessor, predecessor, enteredToRing);
             baseCase = false;
@@ -245,8 +274,23 @@ int main(int argc, char** argv) {
             n << "ack";
             s_server.send(n);
           } else {
-            string sucessorInformation = findSucessor(toInt(id), me, sucessor);
+            pair<int, string> sucessorInformation = findSucessor(toInt(id), me, sucessor);
+            message n;
+            n << "This is your sucessor "
+              << toString(sucessorInformation.first)
+              << sucessorInformation.second;
           }
+        }
+
+        if (ans == "Looking for sucessor of ") {
+          string id;
+          m >> id;
+          pair<int, string> sucessorInformation = findSucessor(toInt(id), me, sucessor);
+          message n;
+          n << "Found the sucessor. It is "
+            << toString(sucessorInformation.first)
+            << sucessorInformation.second;
+          s_server.send(n);
         }
 
         if (ans == "I'm going out, this is your new predecessor") {
@@ -264,7 +308,7 @@ int main(int argc, char** argv) {
           m >> id >> ip >> port;
           dbg(id); dbg(ip); dbg(port);
           s_client.disconnect(sucessor.getEndPoint());
-          updateSucessor(sucessor, toInt(id), ip, port);
+          updateSucessor(me, sucessor, toInt(id), ip, port);
           s_client.connect(sucessor.getEndPoint());
           message n;
           n << "ack";
