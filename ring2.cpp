@@ -48,6 +48,18 @@ int toInt(string s) {
   return out;
 }
 
+vector<string> split(string s, char tok) { // split a string by a token especified
+  istringstream ss(s);
+  string token;
+  vector<string> v;
+
+  while(getline(ss, token, tok)) {
+    v.push_back(token);
+  }
+
+  return v;
+}
+
 bool inTheRange(int left, int right, int i) {
   if ((i > left and i <= range_to) or (i >= range_from and i < right)) return true;
   return false;
@@ -154,11 +166,11 @@ pair<int, string> findSucessor(int id, Node me, Node sucessor) {
       string ans, new_id, new_endPoint;
 
       context ctx;
-      socket s(ctx, socket_type::req);
+      socket s(ctx, socket_type::req); // Asking
       s.connect("tcp://" + new_sucessor.second);
       cout << "Connecting to " << "tcp://" + new_sucessor.second << endl;
 
-      m << "Looking for sucessor of "
+      m << "Looking for sucessor of"
         << toString(id);
       s.send(m);
       cout << "Sended: Looking for sucessor of " << toString(id) << endl;
@@ -171,16 +183,18 @@ pair<int, string> findSucessor(int id, Node me, Node sucessor) {
 }
 
 void updateFingerTable(Node &me) {
-
+  // TODO
 }
 
 void updatePredecessor(Node &predecessor, int id, string ip, string port) {
+  cout << "updatePredecessor" << endl;
   predecessor.setId(id);
   predecessor.setIp(ip);
   predecessor.setPort(port);
 }
 
 void updateSucessor(Node &me, Node &sucessor, int id, string ip, string port) {
+  cout << "updateSucessor" << endl;
   sucessor.setId(id);
   sucessor.setIp(ip);
   sucessor.setPort(port);
@@ -234,10 +248,52 @@ int main(int argc, char** argv) {
             m >> ans;
             cout << "Receiving from server -> " << ans << endl;
 
+            if (ans == "This is your sucessor ") {
+              string id, endPoint, ip;
+              m >> id >> endPoint;
+              s_client.disconnect(sucessor.getEndPoint());
+              cout << "Disconnecting from " << sucessor.getEndPoint() << endl;
+              vector<string> splitted = split(endPoint, ':');
+              ip = splitted[1].erase(0, 2);
+              updateSucessor(me, sucessor, toInt(id), ip, splitted[2]);
+              s_client.connect(sucessor.getEndPoint());
+              cout << "Connecting to " << sucessor.getEndPoint() << endl;
+              message n;
+              n << "Now I am your predecessor."
+                << toString(me.getId())
+                << me.getIp()
+                << me.getPort();
+              s_client.send(n);
+            }
+
+            if (ans == "This is your new predecessor") {
+              string id, ip, port;
+              m >> id >> ip >> port;
+              updatePredecessor(predecessor, toInt(id), ip, port);
+              s_client.disconnect(sucessor.getEndPoint());
+              cout << "Disconnecting from " << sucessor.getEndPoint() << endl;
+              s_client.connect(predecessor.getEndPoint());
+              cout << "Connecting to " << predecessor.getEndPoint() << endl;
+              message n, l;
+              n << "Now I am your sucessor"
+                << toString(me.getId())
+                << me.getIp()
+                << me.getPort();
+              s_client.send(n);
+              cout << "Sended: Now I am your sucessor "
+                   << me.getId() << me.getIp() << me.getPort() << endl;
+              s_client.receive(l); // Ok
+              s_client.disconnect(predecessor.getEndPoint());
+              cout << "Disconnecting from " << predecessor.getEndPoint() << endl;
+              s_client.connect(sucessor.getEndPoint());
+              cout << "Connecting to " << sucessor.getEndPoint() << endl;
+              enterToTheRing(me, sucessor, predecessor, enteredToRing);
+            }
+
             if (enteredToRing) {
               pol.remove(s_client);
             }
-        } // TODO: I need to receive the answere of my new sucessor.!
+        }
       }
       if (pol.has_input(s_server)) {
         message m;
@@ -279,18 +335,50 @@ int main(int argc, char** argv) {
             n << "This is your sucessor "
               << toString(sucessorInformation.first)
               << sucessorInformation.second;
+            s_server.send(n);
           }
         }
 
-        if (ans == "Looking for sucessor of ") {
+        if (ans == "Looking for sucessor of") {
           string id;
           m >> id;
+          dbg(id);
           pair<int, string> sucessorInformation = findSucessor(toInt(id), me, sucessor);
           message n;
           n << "Found the sucessor. It is "
             << toString(sucessorInformation.first)
             << sucessorInformation.second;
           s_server.send(n);
+          cout << "Sended: Found the sucessor. It is "
+               << sucessorInformation.first << sucessorInformation.second << endl;
+        }
+
+        if (ans == "Now I am your predecessor.") {
+          string id, ip, port;
+          m >> id >> ip >> port;
+          message n;
+          n << "This is your new predecessor"
+            << toString(predecessor.getId())
+            << predecessor.getIp()
+            << predecessor.getPort();
+          s_server.send(n);
+          updatePredecessor(predecessor, toInt(id), ip, port);
+        }
+
+        if (ans == "Now I am your sucessor") {
+          string id, ip, port;
+          m >> id >> ip >> port;
+          dbg(id); dbg(ip); dbg(port);
+          message n;
+          n << "ack"; // Ok
+          s_server.send(n);
+          cout << "Sended: ack" << endl;
+          s_client.disconnect(sucessor.getEndPoint());
+          cout << "Disconnecting from " << sucessor.getEndPoint() << endl;
+          me.removeFingerTable(sucessor.getId());
+          updateSucessor(me, sucessor, toInt(id), ip, port);
+          s_client.connect(sucessor.getEndPoint());
+          cout << "Connecting to " << sucessor.getEndPoint() << endl;
         }
 
         if (ans == "I'm going out, this is your new predecessor") {

@@ -53,6 +53,10 @@ public:
     fingerTable[_id] = _ip + ":" + _port;
   }
 
+	void removeFingerTable(int _id) {
+		fingerTable.erase (_id); 
+	}
+
 	pair<int, string> findSucessor(int _id) {
 		int size = fingerTable.size(), i = 0, delta = 0, delta_min = INF, id_min = -1;
 		for (auto& s : fingerTable) {
