@@ -155,7 +155,8 @@ pair<int, string> findSucessor(int id, Node me, Node sucessor) {
   if (me.getId() > sucessor.getId() and
       inTheRange(sucessor.getId(), me.getId(), id)) { // in the end of the range
     cout << "In the end of the range" << endl;
-    return make_pair(sucessor.getId(), sucessor.getEndPoint());
+    string endPoint = sucessor.getIp() + ":" + sucessor.getPort();
+    return make_pair(sucessor.getId(), endPoint);
   } else {
     pair<int, string> new_sucessor = me.findSucessor(id); // id, endPoint
     dbg(new_sucessor.first); dbg(new_sucessor.second);
@@ -251,11 +252,13 @@ int main(int argc, char** argv) {
             if (ans == "This is your sucessor ") {
               string id, endPoint, ip;
               m >> id >> endPoint;
+              dbg(id); dbg(endPoint);
               s_client.disconnect(sucessor.getEndPoint());
               cout << "Disconnecting from " << sucessor.getEndPoint() << endl;
               vector<string> splitted = split(endPoint, ':');
-              ip = splitted[1].erase(0, 2);
-              updateSucessor(me, sucessor, toInt(id), ip, splitted[2]);
+              dbg(splitted[0]);
+              dbg(splitted[1]);
+              updateSucessor(me, sucessor, toInt(id), splitted[0], splitted[1]);
               s_client.connect(sucessor.getEndPoint());
               cout << "Connecting to " << sucessor.getEndPoint() << endl;
               message n;
@@ -331,11 +334,14 @@ int main(int argc, char** argv) {
             s_server.send(n);
           } else {
             pair<int, string> sucessorInformation = findSucessor(toInt(id), me, sucessor);
+            dbg(sucessorInformation.first); dbg(sucessorInformation.second);
             message n;
             n << "This is your sucessor "
               << toString(sucessorInformation.first)
               << sucessorInformation.second;
             s_server.send(n);
+            cout << "Sended: This is your sucessor "
+                 << sucessorInformation.first << sucessorInformation.second << endl;
           }
         }
 
