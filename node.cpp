@@ -1,5 +1,5 @@
 #include <iostream>
-#include <vector>
+#include <map>
 using namespace std;
 
 #define dbg(x) cout << #x << ": " << x << endl
@@ -9,7 +9,7 @@ class Node {
 private:
 	int id;
 	string ip, port;
-  vector<pair<int,string>> fingerTable; // id, ip + port
+  map<int,string> fingerTable; // id, ip + port
 
 public:
   Node() {}
@@ -48,13 +48,8 @@ public:
     port = _port;
   }
 
-  void resizeFingerTable(int n) {
-    fingerTable.resize(n);
-  }
-
   void insertInFingerTable(int _id, string _ip, string _port) {
-    string connection = _ip + _port;
-    fingerTable.push_back(make_pair(_id, connection));
+    fingerTable[_id] = _ip + _port;
   }
 
   void print() {

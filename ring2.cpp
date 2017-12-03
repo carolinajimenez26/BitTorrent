@@ -170,8 +170,6 @@ int main(int argc, char** argv) {
   Node sucessor(argv[3], argv[4], -1);
   Node predecessor(argv[3], argv[4], -1);
 
-  me.resizeFingerTable(NumberOfBits);
-
   context ctx;
 	socket s_server(ctx, socket_type::rep); //Listening
 	socket s_client(ctx, socket_type::req); //Asking
@@ -200,23 +198,18 @@ int main(int argc, char** argv) {
 
   while (true) {
     if (pol.poll()) {
-      if (pol.has_input(s_client)) {
-
-          if (enteredToRing and !flag) {
-            pol.remove(s_client);
-            flag = true;
-            continue;
-          }
-
-          if (!enteredToRing) {
+      if (!enteredToRing) {
+        if (pol.has_input(s_client)) {
             message m;
             string ans;
             s_client.receive(m);
             m >> ans;
             cout << "Receiving from server -> " << ans << endl;
 
-          }
-
+            if (enteredToRing) {
+              pol.remove(s_client);
+            }
+        }
       }
       if (pol.has_input(s_server)) {
         message m;
@@ -242,6 +235,7 @@ int main(int argc, char** argv) {
           dbg(id); dbg(endPoint);
           if (endPoint == predecessor.getEndPoint()
               and endPoint == sucessor.getEndPoint()) baseCase = true;
+          dbg(baseCase);
           if (baseCase) {
             sucessor.setId(toInt(id));
             predecessor.setId(toInt(id));
