@@ -24,7 +24,9 @@ void messageToSubscriber(string &text) {
       message m;
       m << text;
       s_susbscriber.send(m);
+      cout << "Sended to susbscriber" << endl;
       s_susbscriber.receive(m);
+      cout << "Received from subscriber" << endl;
       text = "";
     }
   }
@@ -61,14 +63,18 @@ void outOfTheRing(socket &s_client, Node predecessor, Node sucessor, Node me) {
     toSusbcriber = "out:" + me.getEndPoint();
     cout << "---------------------- Good bye baby ----------------------" << endl;
     exit(1);
-    
-  } else {
 
+  } else {
+    string id_s = toString(predecessor.getId());
+    string tmp1 = predecessor.getIp(), tmp2 = predecessor.getPort();
+    dbg(id_s); dbg(predecessor.getIp()); dbg(predecessor.getPort());
     m << "I'm going out, this is your new predecessor"
-      << toString(predecessor.getId())
-      << predecessor.getIp()
-      << predecessor.getPort();
+      << id_s
+      << tmp1
+      << tmp2;
+    s_client.receive(n);
     s_client.send(m);
+    cout << "Sended: I'm going out, this is your new predecessor" << endl;
     s_client.receive(n); // Ok
     if (sucessor.getEndPoint() != predecessor.getEndPoint()) {
         cout << "Disconnecting from " << sucessor.getEndPoint() << endl;
@@ -81,6 +87,7 @@ void outOfTheRing(socket &s_client, Node predecessor, Node sucessor, Node me) {
       << sucessor.getIp()
       << sucessor.getPort();
     s_client.send(m);
+    cout << "Sended: I'm going out, this is your new sucessor" << endl;
     s_client.receive(n); // Ok
     cout << "Disconnecting from " << predecessor.getEndPoint() << endl;
     s_client.disconnect(predecessor.getEndPoint());
@@ -132,6 +139,7 @@ void ask(socket &s_client, Node &me, Node &predecessor, Node &sucessor, bool &fl
 }
 
 string findSucessor(int id, Node me, Node sucessor) {
+  cout << "findSucessor" << endl;
   return "";
 }
 
@@ -178,7 +186,7 @@ int main(int argc, char** argv) {
   pol.add(s_server);
   pol.add(s_client);
 
-  bool id_flag = false, enteredToRing = false, baseCase = false;
+  bool flag = false, enteredToRing = false, baseCase = false;
 
   thread t1(messageToSubscriber, ref(toSusbcriber));
   thread t2(ask, ref(s_client), ref(me), ref(predecessor), ref(sucessor),
@@ -192,15 +200,23 @@ int main(int argc, char** argv) {
 
   while (true) {
     if (pol.poll()) {
-      if (!enteredToRing) {
-        if (pol.has_input(s_client)) {
-          message m;
-          string ans;
-          s_client.receive(m);
-          m >> ans;
-          cout << "Receiving from server -> " << ans << endl;
+      if (pol.has_input(s_client)) {
 
-        }
+          if (enteredToRing and !flag) {
+            pol.remove(s_client);
+            flag = true;
+            continue;
+          }
+
+          if (!enteredToRing) {
+            message m;
+            string ans;
+            s_client.receive(m);
+            m >> ans;
+            cout << "Receiving from server -> " << ans << endl;
+
+          }
+
       }
       if (pol.has_input(s_server)) {
         message m;
@@ -230,8 +246,9 @@ int main(int argc, char** argv) {
             sucessor.setId(toInt(id));
             predecessor.setId(toInt(id));
             enterToTheRing(me, sucessor, predecessor, enteredToRing);
+            baseCase = false;
             message n;
-            n << "";
+            n << "ack";
             s_server.send(n);
           } else {
             string sucessorInformation = findSucessor(toInt(id), me, sucessor);
@@ -244,7 +261,7 @@ int main(int argc, char** argv) {
           dbg(id); dbg(ip); dbg(port);
           updatePredecessor(predecessor, toInt(id), ip, port);
           message n;
-          n << "Ok";
+          n << "ack";
           s_server.send(n);
         }
 
@@ -256,9 +273,8 @@ int main(int argc, char** argv) {
           updateSucessor(sucessor, toInt(id), ip, port);
           s_client.connect(sucessor.getEndPoint());
           message n;
-          n << "Ok";
+          n << "ack";
           s_server.send(n);
-          printInformation(me, sucessor, predecessor);
         }
       }
     }
