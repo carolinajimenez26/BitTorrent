@@ -81,11 +81,29 @@ void outOfTheRing(socket &s_client, Node predecessor, Node sucessor, Node me) {
   }
 
   toSusbcriber = "out:" + me.getEndPoint();
-  cout << "---------------------- Good bye baby -------------------------" << endl;
+  cout << "---------------------- Good bye baby ----------------------" << endl;
   exit(1);
 }
 
-void ask(socket &s_client, Node me, Node predecessor, Node sucessor, bool &flag) {
+void printInformation(Node me, Node sucessor, Node predecessor) {
+  cout << "Me: " << endl;
+  me.print();
+  cout << "Sucessor: " << endl;
+  sucessor.print();
+  cout << "Predecessor: " << endl;
+  predecessor.print();
+}
+
+void enterToTheRing(Node me, Node sucessor, Node predecessor, bool &flag) {
+  flag = true;
+  cout << "-------Entered to the ring!!-------" << endl;
+  printInformation(me, sucessor, predecessor);
+  cout << "---------------------------" << endl;
+  dbg(me.getEndPoint());
+  toSusbcriber = me.getEndPoint();
+}
+
+void ask(socket &s_client, Node &me, Node &predecessor, Node &sucessor, bool &flag) {
 
   context ctx;
   socket s(ctx, socket_type::req);
@@ -113,15 +131,6 @@ string findSucessor(int id, Node me, Node sucessor) {
 
 void updateFingerTable(Node &me) {
 
-}
-
-void printInformation(Node me, Node sucessor, Node predecessor) {
-  cout << "Me: " << endl;
-  me.print();
-  cout << "Sucessor: " << endl;
-  sucessor.print();
-  cout << "Predecessor: " << endl;
-  predecessor.print();
 }
 
 void updatePredecessor(Node &predecessor, int id, string ip, string port) {
@@ -170,7 +179,7 @@ int main(int argc, char** argv) {
             ref(enteredToRing));
 
   message m;
-  m << "Want to joint. This is my information "
+  m << "Want to join. This is my information "
     << toString(me.getId())
     << me.getEndPoint();
   s_client.send(m);
@@ -194,17 +203,30 @@ int main(int argc, char** argv) {
         m >> ans;
         cout << "Receiving from client -> " << ans << endl;
 
-        if (ans == "Want to joint. This is my information ") {
+        if (ans == "send me your information") {
+          string information = "I am " + toString(me.getId()) +
+                     "-> predecessorId: " + toString(predecessor.getId()) +
+                     ", sucessorId: " + toString(sucessor.getId()) +
+                     ". Connected to: " + sucessor.getEndPoint() +
+                     ". Listening on: " + me.getEndPoint();
+          message n;
+          n << information;
+          s_server.send(n);
+        }
+
+        if (ans == "Want to join. This is my information ") {
           string id, endPoint;
           m >> id >> endPoint;
           dbg(id); dbg(endPoint);
           if (endPoint == predecessor.getEndPoint()
               and endPoint == sucessor.getEndPoint()) baseCase = true;
-          if (baseCase) { // actualize
+          if (baseCase) {
             sucessor.setId(toInt(id));
             predecessor.setId(toInt(id));
-            printInformation(me, sucessor, predecessor);
-            enteredToRing = true;
+            enterToTheRing(me, sucessor, predecessor, enteredToRing);
+            message n;
+            n << "";
+            s_server.send(n);
           } else {
             string sucessorInformation = findSucessor(toInt(id), me, sucessor);
           }
@@ -230,6 +252,7 @@ int main(int argc, char** argv) {
           message n;
           n << "Ok";
           s_server.send(n);
+          printInformation(me, sucessor, predecessor);
         }
       }
     }
