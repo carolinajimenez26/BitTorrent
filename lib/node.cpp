@@ -76,7 +76,7 @@ public:
     for (auto& s : fingerTable) {
       finger += "I am " + toString(id) + "-> predecessorId: -1, sucessorId: " + toString(s.first) + 
       ". Connected to: " + "tcp://" + s.second + 
-      "Listening on: tcp://" + ip + port + "\n";
+      ". Listening on: tcp://" + ip + port + "\n";
     }
     return finger;
   }

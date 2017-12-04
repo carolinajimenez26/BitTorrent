@@ -123,9 +123,13 @@ void ask(socket &s_client, Node &me, Node &predecessor, Node &sucessor, bool &fl
       cin >> op;
       if (op == "1" or op == "Exit") {
         outOfTheRing(s_client, predecessor, sucessor, me);
-      } else if (op == "2"){
+      } else if (op == "2" or op == "Show fingerTable"){
         toSusbcriber = "showFingerTable:" + me.getFingerTable();
 
+      } else if (op == "3" or op == "Show Ring"){
+        toSusbcriber = "ask";
+      } else {
+        cout << "Invalid operation" << endl;
       }
     }
   }
