@@ -61,6 +61,7 @@ vector<string> split(string s, char tok) { // split a string by a token especifi
 }
 
 bool inTheRange(int left, int right, int i) {
+  dbg(left); dbg(right); dbg(i);
   if ((i > left and i <= range_to) or (i >= range_from and i < right)) return true;
   return false;
 }
@@ -152,34 +153,46 @@ void ask(socket &s_client, Node &me, Node &predecessor, Node &sucessor, bool &fl
 
 pair<int, string> findSucessor(int id, Node me, Node sucessor) {
   cout << "findSucessor" << endl;
-  if (me.getId() > sucessor.getId() and
+  string endPoint = "";
+  dbg(me.getId()); dbg(sucessor.getId());
+  dbg((me.getId() > sucessor.getId()));
+  dbg(inTheRange(sucessor.getId(), me.getId(), id));
+  if (me.getId() > id) { // I am your sucessor
+    cout << "I am your sucessor " << me.getId() << endl;
+    endPoint = me.getIp() + ":" + me.getPort();
+    return make_pair(me.getId(), endPoint);
+  } else if (me.getId() > sucessor.getId() and
       inTheRange(sucessor.getId(), me.getId(), id)) { // in the end of the range
     cout << "In the end of the range" << endl;
-    string endPoint = sucessor.getIp() + ":" + sucessor.getPort();
+    endPoint = sucessor.getIp() + ":" + sucessor.getPort();
     return make_pair(sucessor.getId(), endPoint);
-  } else {
+  } else { // take a look in my fingerTable
     pair<int, string> new_sucessor = me.findSucessor(id); // id, endPoint
     dbg(new_sucessor.first); dbg(new_sucessor.second);
-    if (new_sucessor.first > id) { // found it!
-      return new_sucessor;
-    } else { // look for it
-      message m, n;
-      string ans, new_id, new_endPoint;
 
-      context ctx;
-      socket s(ctx, socket_type::req); // Asking
-      s.connect("tcp://" + new_sucessor.second);
-      cout << "Connecting to " << "tcp://" + new_sucessor.second << endl;
-
-      m << "Looking for sucessor of"
-        << toString(id);
-      s.send(m);
-      cout << "Sended: Looking for sucessor of " << toString(id) << endl;
-      s.receive(n); // "Found the sucessor. It is "
-      n >> ans >> new_id >> new_endPoint;
-      dbg(ans); dbg(new_id); dbg(new_endPoint);
-      return make_pair(toInt(new_id), new_endPoint);
+    if (new_sucessor.first < 0) { // Gonna ask my sucessor
+      endPoint = sucessor.getEndPoint();
+    } else { // Gona ask the nearest sucessor
+      endPoint = "tcp://" + new_sucessor.second;
     }
+
+    message m, n;
+    string ans, new_id, new_endPoint;
+
+    context ctx;
+    socket s(ctx, socket_type::req); // Asking
+    s.connect(endPoint);
+    cout << "Connecting to " << endPoint << endl;
+
+    m << "Looking for sucessor of"
+      << toString(id);
+    s.send(m);
+    cout << "Sended: Looking for sucessor of " << toString(id) << endl;
+    s.receive(n); // "Found the sucessor. It is "
+    n >> ans >> new_id >> new_endPoint;
+    dbg(ans); dbg(new_id); dbg(new_endPoint);
+    s.disconnect(endPoint); // Thanks, bye
+    return make_pair(toInt(new_id), new_endPoint);
   }
 }
 

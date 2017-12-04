@@ -54,27 +54,23 @@ public:
   }
 
 	void removeFingerTable(int _id) {
-		fingerTable.erase (_id); 
+		fingerTable.erase (_id);
 	}
 
 	pair<int, string> findSucessor(int _id) {
-		int size = fingerTable.size(), i = 0, delta = 0, delta_min = INF, id_min = -1;
+		int size = fingerTable.size(), delta = 0, delta_min = INF, id_min = -1;
 		for (auto& s : fingerTable) {
 			dbg(_id); dbg(s.first);
 			delta = _id - s.first;
-			if (delta < delta_min) {
+			if (delta < delta_min and delta > 0) {
 				delta_min = delta;
 				id_min = s.first;
-			}
+			} if (delta < 0) break; // in order, I don't need the greates, only the nearest
 			dbg(delta);
 			dbg(delta_min);
-			if (delta_min < 0) {
-				return make_pair(id_min, fingerTable[id_min]);
-			}
-			if (i + 1 == size) { // the last element
-				return make_pair(id_min, fingerTable[id_min]);
-			}
 		}
+		if (id_min < 0) return make_pair(id_min, "");
+		return make_pair(id_min, fingerTable[id_min]);
 	}
 
   void print() {
