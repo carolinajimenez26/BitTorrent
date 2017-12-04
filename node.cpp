@@ -8,22 +8,22 @@ using namespace std;
 class Node {
 
 private:
-	int id;
-	string ip, port;
+  int id;
+  string ip, port;
   map<int,string> fingerTable; // id, ip + port
 
 public:
   Node() {}
 
   Node(string _ip, string _port, int _id) {
-		ip = _ip;
-		port = _port;
-		id = _id;
-	}
+    ip = _ip;
+    port = _port;
+    id = _id;
+  }
 
-	string getEndPoint() {
-		return "tcp://" + ip + ":" + port;
-	}
+  string getEndPoint() {
+    return "tcp://" + ip + ":" + port;
+  }
 
   void setIp(string _ip) {
     ip = _ip;
@@ -50,33 +50,48 @@ public:
   }
 
   void insertInFingerTable(int _id, string _ip, string _port) {
-    fingerTable[_id] = _ip + ":" + _port;
+    if (_id != id) fingerTable[_id] = _ip + ":" + _port;
   }
 
-	void removeFingerTable(int _id) {
-		fingerTable.erase (_id); 
-	}
+  void removeFingerTable(int _id) {
+    fingerTable.erase(_id);
+  }
 
-	pair<int, string> findSucessor(int _id, int sucessorId) {
-		int size = fingerTable.size(), i = 0, delta = 0, delta_min = INF, id_min = -1, temp = sucessorId;
-    /*if (_id < sucessorId)
-      return make_pair(sucessorId, fingerTable[sucessorId]);*/
+  void clearFingerTable() {
+    fingerTable.clear();
+  }
+
+  void showFingerTable() {
+    cout << "------------showFingerTable---------------" << endl;
+    for (auto& s : fingerTable) {
+      cout << s.first << " -> " << s.second << endl;
+    }
+    cout << "------------------------------------------" << endl;
+  }
+
+  string getFingerTable() {
+    string finger = "";
+    for (auto& s : fingerTable) {
+      finger += s.first + "->" + s.second + "\n";
+    }
+    return finger;
+  }
+
+  pair<int, string> findSucessor(int _id) {
+    int size = fingerTable.size(), delta = 0, delta_min = INF, id_min = -1;
     for (auto& s : fingerTable) {
       dbg(_id); dbg(s.first);
       delta = _id - s.first;
-
-			if (delta < delta_min) {
-				delta_min = delta;
-				id_min = s.first;
-			}
-			dbg(delta);
-			dbg(delta_min);
-			if (delta_min < 0) {
-				return make_pair(temp, fingerTable[temp]);
-			}
-      temp = s.first;
-		}
-	}
+      if (delta < delta_min and delta > 0) {
+        delta_min = delta;
+        id_min = s.first;
+      } if (delta < 0) break; // in order, I don't need the greates, only the nearest
+      dbg(delta);
+      dbg(delta_min);
+    }
+    if (id_min < 0) return make_pair(id_min, "");
+    return make_pair(id_min, fingerTable[id_min]);
+  }
 
   void print() {
     cout << "----------------" << endl;

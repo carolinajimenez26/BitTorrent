@@ -3,6 +3,8 @@
 #include <sstream>
 #include <zmqpp/zmqpp.hpp>
 #include <thread>
+#include <chrono>
+#include <math.h>
 #include "node.cpp"
 
 using namespace std;
@@ -61,6 +63,7 @@ vector<string> split(string s, char tok) { // split a string by a token especifi
 }
 
 bool inTheRange(int left, int right, int i) {
+  dbg(left); dbg(right); dbg(i);
   if ((i > left and i <= range_to) or (i >= range_from and i < right)) return true;
   return false;
 }
@@ -152,42 +155,74 @@ void ask(socket &s_client, Node &me, Node &predecessor, Node &sucessor, bool &fl
 
 pair<int, string> findSucessor(int id, Node me, Node sucessor) {
   cout << "findSucessor" << endl;
-  if (id > me.getId() && id < sucessor.getId()){
-    return make_pair(sucessor.getId(), sucessor.getEndPoint());
-  }
-  if (me.getId() > sucessor.getId() and
+  string endPoint = "";
+  dbg(me.getId()); dbg(sucessor.getId());
+  dbg((me.getId() > sucessor.getId()));
+  dbg(inTheRange(sucessor.getId(), me.getId(), id));
+  if (me.getId() > id) { // I am your sucessor
+    cout << "I am your sucessor " << me.getId() << endl;
+    endPoint = me.getIp() + ":" + me.getPort();
+    return make_pair(me.getId(), endPoint);
+  } else if (me.getId() > sucessor.getId() and
       inTheRange(sucessor.getId(), me.getId(), id)) { // in the end of the range
     cout << "In the end of the range" << endl;
-    string endPoint = sucessor.getIp() + ":" + sucessor.getPort();
+    endPoint = sucessor.getIp() + ":" + sucessor.getPort();
     return make_pair(sucessor.getId(), endPoint);
-  } else {
-    pair<int, string> new_sucessor = me.findSucessor(id, sucessor.getId()); // id, endPoint
+  } else { // take a look in my fingerTable
+    pair<int, string> new_sucessor = me.findSucessor(id); // id, endPoint
     dbg(new_sucessor.first); dbg(new_sucessor.second);
-    if (new_sucessor.first > id) { // found it!
-      return new_sucessor;
-    } else { // look for it
-      message m, n;
-      string ans, new_id, new_endPoint;
 
-      context ctx;
-      socket s(ctx, socket_type::req); // Asking
-      s.connect("tcp://" + new_sucessor.second);
-      cout << "Connecting to " << "tcp://" + new_sucessor.second << endl;
-
-      m << "Looking for sucessor of"
-        << toString(id);
-      s.send(m);
-      cout << "Sended: Looking for sucessor of " << toString(id) << endl;
-      s.receive(n); // "Found the sucessor. It is "
-      n >> ans >> new_id >> new_endPoint;
-      dbg(ans); dbg(new_id); dbg(new_endPoint);
-      return make_pair(toInt(new_id), new_endPoint);
+    if (new_sucessor.first < 0) { // Gonna ask my sucessor
+      endPoint = sucessor.getEndPoint();
+    } else { // Gona ask the nearest sucessor
+      endPoint = "tcp://" + new_sucessor.second;
     }
+
+    message m, n;
+    string ans, new_id, new_endPoint;
+
+    context ctx;
+    socket s(ctx, socket_type::req); // Asking
+    s.connect(endPoint);
+    cout << "Connecting to " << endPoint << endl;
+
+    m << "Looking for sucessor of"
+      << toString(id);
+    s.send(m);
+    cout << "Sended: Looking for sucessor of " << toString(id) << endl;
+    s.receive(n); // "Found the sucessor. It is "
+    n >> ans >> new_id >> new_endPoint;
+    dbg(ans); dbg(new_id); dbg(new_endPoint);
+    s.disconnect(endPoint); // Thanks, bye
+    return make_pair(toInt(new_id), new_endPoint);
   }
 }
 
-void updateFingerTable(Node &me) {
-  // TODO
+void updateFingerTable(Node &me, Node &sucessor, bool &flag) {
+  chrono::seconds interval(10); // 10 seconds
+  while (true) {
+    if (flag) {
+      cout << "updateFingerTable" << endl;
+      me.clearFingerTable();
+      me.insertInFingerTable(sucessor.getId(), sucessor.getIp(), sucessor.getPort());
+      int bit = 1;
+      for (int i = 0; i < NumberOfBits; i++) {
+        dbg(bit);
+        int needed = me.getId() + bit;
+        bit = bit << 1;
+        dbg(needed);
+        if (needed != sucessor.getId()) {
+          pair<int, string> new_sucessor = findSucessor(needed, me, sucessor);
+          vector<string> splitted = split(new_sucessor.second, ':');
+          dbg(splitted[0]); dbg(splitted[1]);
+          me.insertInFingerTable(new_sucessor.first, splitted[0], splitted[1]);
+        }
+      }
+      me.showFingerTable();
+      toSusbcriber = "showFingerTable:" + me.getFingerTable();
+      this_thread::sleep_for(interval);
+    }
+  }
 }
 
 void updatePredecessor(Node &predecessor, int id, string ip, string port) {
@@ -199,10 +234,11 @@ void updatePredecessor(Node &predecessor, int id, string ip, string port) {
 
 void updateSucessor(Node &me, Node &sucessor, int id, string ip, string port) {
   cout << "updateSucessor" << endl;
+  me.removeFingerTable(sucessor.getId());
   sucessor.setId(id);
   sucessor.setIp(ip);
   sucessor.setPort(port);
-  me.insertInFingerTable(sucessor.getId()%30, sucessor.getIp(), sucessor.getPort());
+  me.insertInFingerTable(sucessor.getId(), sucessor.getIp(), sucessor.getPort());
 }
 
 int main(int argc, char** argv) {
@@ -212,19 +248,24 @@ int main(int argc, char** argv) {
       return 1;
   }
 
-	Node me("*", argv[2], toInt(argv[5]));
+  Node me("*", argv[2], toInt(argv[5]));
   Node sucessor(argv[3], argv[4], -1);
   Node predecessor(argv[3], argv[4], -1);
 
   context ctx;
-	socket s_server(ctx, socket_type::rep); //Listening
-	socket s_client(ctx, socket_type::req); //Asking
 
+  /*--------------Server--------------------*/
+  socket s_server(ctx, socket_type::rep); //Listening
   s_server.bind(me.getEndPoint());
   cout << "Server listening on " << me.getEndPoint() << endl;
   me.setIp("localhost");
+  /*-----------------------------------------*/
+
+  /*--------------Client----------------------*/
+  socket s_client(ctx, socket_type::req); //Asking
   s_client.connect(sucessor.getEndPoint());
   cout << "Client connected to " << sucessor.getEndPoint() << endl;
+  /*------------------------------------------*/
 
   poller pol;
   pol.add(s_server);
@@ -232,9 +273,12 @@ int main(int argc, char** argv) {
 
   bool flag = false, enteredToRing = false, baseCase = false;
 
+  /*---------------Threads---------------------*/
   thread t1(messageToSubscriber, ref(toSusbcriber));
   thread t2(ask, ref(s_client), ref(me), ref(predecessor), ref(sucessor),
             ref(enteredToRing));
+  thread t3(updateFingerTable, ref(me), ref(sucessor), ref(enteredToRing));
+  /*-------------------------------------------*/
 
   message m;
   m << "Want to join. This is my information "
@@ -328,7 +372,7 @@ int main(int argc, char** argv) {
           dbg(baseCase);
           if (baseCase) {
             sucessor.setId(toInt(id));
-            me.insertInFingerTable(sucessor.getId()%30, sucessor.getIp(), sucessor.getPort());
+            me.insertInFingerTable(sucessor.getId(), sucessor.getIp(), sucessor.getPort());
             predecessor.setId(toInt(id));
             enterToTheRing(me, sucessor, predecessor, enteredToRing);
             baseCase = false;
