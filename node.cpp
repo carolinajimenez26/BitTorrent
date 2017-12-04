@@ -50,11 +50,23 @@ public:
   }
 
   void insertInFingerTable(int _id, string _ip, string _port) {
-    fingerTable[_id] = _ip + ":" + _port;
+		if (_id != id) fingerTable[_id] = _ip + ":" + _port;
   }
 
 	void removeFingerTable(int _id) {
-		fingerTable.erase (_id);
+		fingerTable.erase(_id);
+	}
+
+	void clearFingerTable() {
+		fingerTable.clear();
+	}
+
+	void showFingerTable() {
+		cout << "------------showFingerTable---------------" << endl;
+		for (auto& s : fingerTable) {
+			cout << s.first << " -> " << s.second << endl;
+		}
+		cout << "------------------------------------------" << endl;
 	}
 
 	pair<int, string> findSucessor(int _id) {

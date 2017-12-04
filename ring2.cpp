@@ -4,6 +4,7 @@
 #include <zmqpp/zmqpp.hpp>
 #include <thread>
 #include <chrono>
+#include <math.h>
 #include "node.cpp"
 
 using namespace std;
@@ -197,11 +198,29 @@ pair<int, string> findSucessor(int id, Node me, Node sucessor) {
   }
 }
 
-void updateFingerTable(Node &me, Node &sucessor) {
-  chrono::seconds interval(30); // 30 seconds
+void updateFingerTable(Node &me, Node &sucessor, bool &flag) {
+  chrono::seconds interval(10); // 10 seconds
   while (true) {
-     cout << "tick!\n" << flush;
-     this_thread::sleep_for(interval);
+    if (flag) {
+      cout << "updateFingerTable" << endl;
+      me.clearFingerTable();
+      me.insertInFingerTable(sucessor.getId(), sucessor.getIp(), sucessor.getPort());
+      int bit = 1;
+      for (int i = 0; i < NumberOfBits; i++) {
+        dbg(bit);
+        int needed = me.getId() + bit;
+        bit = bit << 1;
+        dbg(needed);
+        if (needed != sucessor.getId()) {
+          pair<int, string> new_sucessor = findSucessor(needed, me, sucessor);
+          vector<string> splitted = split(new_sucessor.second, ':');
+          dbg(splitted[0]); dbg(splitted[1]);
+          me.insertInFingerTable(new_sucessor.first, splitted[0], splitted[1]);
+        }
+      }
+      me.showFingerTable();
+      this_thread::sleep_for(interval);
+    }
   }
 }
 
@@ -214,6 +233,7 @@ void updatePredecessor(Node &predecessor, int id, string ip, string port) {
 
 void updateSucessor(Node &me, Node &sucessor, int id, string ip, string port) {
   cout << "updateSucessor" << endl;
+  me.removeFingerTable(sucessor.getId());
   sucessor.setId(id);
   sucessor.setIp(ip);
   sucessor.setPort(port);
@@ -232,14 +252,26 @@ int main(int argc, char** argv) {
   Node predecessor(argv[3], argv[4], -1);
 
   context ctx;
-	socket s_server(ctx, socket_type::rep); //Listening
-	socket s_client(ctx, socket_type::req); //Asking
 
+  /*---------------Publisher---------------*/
+  socket s_publisher(ctx, socket_type::pub); //Publishing
+  string publisherEndPoint = "tcp://*:5574";
+  s_publisher.bind(publisherEndPoint);
+  cout << "Publisher endPoint " << publisherEndPoint << endl;
+  /*----------------------------------------*/
+
+  /*--------------Server--------------------*/
+  socket s_server(ctx, socket_type::rep); //Listening
   s_server.bind(me.getEndPoint());
   cout << "Server listening on " << me.getEndPoint() << endl;
   me.setIp("localhost");
+  /*-----------------------------------------*/
+
+  /*--------------Client----------------------*/
+  socket s_client(ctx, socket_type::req); //Asking
   s_client.connect(sucessor.getEndPoint());
   cout << "Client connected to " << sucessor.getEndPoint() << endl;
+  /*------------------------------------------*/
 
   poller pol;
   pol.add(s_server);
@@ -247,10 +279,12 @@ int main(int argc, char** argv) {
 
   bool flag = false, enteredToRing = false, baseCase = false;
 
+  /*---------------Threads---------------------*/
   thread t1(messageToSubscriber, ref(toSusbcriber));
   thread t2(ask, ref(s_client), ref(me), ref(predecessor), ref(sucessor),
             ref(enteredToRing));
-  thread t3(updateFingerTable, ref(me), ref(sucessor));
+  thread t3(updateFingerTable, ref(me), ref(sucessor), ref(enteredToRing));
+  /*-------------------------------------------*/
 
   message m;
   m << "Want to join. This is my information "
