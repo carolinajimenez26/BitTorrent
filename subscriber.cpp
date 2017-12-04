@@ -3,25 +3,14 @@
 #include <vector>
 #include <unordered_map>
 #include <sstream>
+#include "lib/utils.cpp"
 
 using namespace std;
 using namespace zmqpp;
 
 #define dbg(x) cout << #x << ": " << x << endl
 
-vector<string> split(string s, char tok) { // split a string by a token especified
-  istringstream ss(s);
-  string token;
-  vector<string> v;
-
-  while(getline(ss, token, tok)) {
-    v.push_back(token);
-  }
-
-  return v;
-}
-
-void askInformation(vector<string> &ips, socket &s_client, socket &s_publisher){
+string askInformation(vector<string> &ips, socket &s_client, socket &s_publisher){
 
     cout << "-----------------------------------------------" << endl;
 
@@ -41,10 +30,7 @@ void askInformation(vector<string> &ips, socket &s_client, socket &s_publisher){
     }
     cout << "-----------------------------------------------" << endl;
 
-    message subs_m;
-    subs_m << msg;
-    s_publisher.send(subs_m);
-    cout << "Sending to publisher " << endl;
+    return msg;
 }
 
 int main () {
@@ -66,6 +52,7 @@ int main () {
     pol.add(s_server);
     message m;
     vector<string> splitted;
+    string information;
 
     while(true){
         if (pol.poll()) {
@@ -75,11 +62,7 @@ int main () {
                 m >> text;
                 cout << "TEXT: " << text << endl;
                 splitted = split(text, ':');
-                dbg(splitted[0]);
-                if (splitted[0] == "showFingerTable") {
-                  s_publisher.send(m);
-                  cout << "Sending to publisher: showFingerTable" << endl;
-                }
+
                 if (splitted[0] == "out"){
                     string ip_aux = splitted[1] + ":" + splitted[2] + ":" + splitted[3];
                     cout << "out " << ip_aux << endl;
@@ -91,13 +74,23 @@ int main () {
                     }
                     m << "";
                     s_server.send(m);
-                    askInformation(ips, s_client, s_publisher);
+                    information = askInformation(ips, s_client, s_publisher);
+                    message subs_m;
+                    subs_m << information;
+                    s_publisher.send(subs_m);
+                    cout << "Sending to publisher " << endl;
+                } else if (splitted[0] == "showFingerTable"){
+                    // 
                 } else {
                     ips.push_back(text);
                     cout << "Entered " << text << endl;
                     m << "";
                     s_server.send(m);
-                    askInformation(ips, s_client, s_publisher);
+                    information = askInformation(ips, s_client, s_publisher);
+                    message subs_m;
+                    subs_m << information;
+                    s_publisher.send(subs_m);
+                    cout << "Sending to publisher " << endl;
                 }
             }
         }

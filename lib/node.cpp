@@ -1,5 +1,7 @@
 #include <iostream>
 #include <map>
+#include "utils.cpp"
+
 using namespace std;
 
 #define INF numeric_limits<int>::max()
@@ -72,7 +74,9 @@ public:
   string getFingerTable() {
     string finger = "";
     for (auto& s : fingerTable) {
-      finger += s.first + "->" + s.second + "\n";
+      finger += "I am " + toString(id) + "-> predecessorId: -1, sucessorId: " + toString(s.first) + 
+      ". Connected to: " + "tcp://" + s.second + 
+      "Listening on: tcp://" + ip + port + "\n";
     }
     return finger;
   }
