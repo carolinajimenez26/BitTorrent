@@ -3,6 +3,7 @@
 #include <sstream>
 #include <zmqpp/zmqpp.hpp>
 #include <thread>
+#include <chrono>
 #include "node.cpp"
 
 using namespace std;
@@ -196,8 +197,12 @@ pair<int, string> findSucessor(int id, Node me, Node sucessor) {
   }
 }
 
-void updateFingerTable(Node &me) {
-  // TODO
+void updateFingerTable(Node &me, Node &sucessor) {
+  chrono::seconds interval(30); // 30 seconds
+  while (true) {
+     cout << "tick!\n" << flush;
+     this_thread::sleep_for(interval);
+  }
 }
 
 void updatePredecessor(Node &predecessor, int id, string ip, string port) {
@@ -245,6 +250,7 @@ int main(int argc, char** argv) {
   thread t1(messageToSubscriber, ref(toSusbcriber));
   thread t2(ask, ref(s_client), ref(me), ref(predecessor), ref(sucessor),
             ref(enteredToRing));
+  thread t3(updateFingerTable, ref(me), ref(sucessor));
 
   message m;
   m << "Want to join. This is my information "
