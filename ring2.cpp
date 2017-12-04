@@ -219,6 +219,7 @@ void updateFingerTable(Node &me, Node &sucessor, bool &flag) {
         }
       }
       me.showFingerTable();
+      toSusbcriber = "showFingerTable:" + me.getFingerTable();
       this_thread::sleep_for(interval);
     }
   }
@@ -252,13 +253,6 @@ int main(int argc, char** argv) {
   Node predecessor(argv[3], argv[4], -1);
 
   context ctx;
-
-  /*---------------Publisher---------------*/
-  socket s_publisher(ctx, socket_type::pub); //Publishing
-  string publisherEndPoint = "tcp://*:5574";
-  s_publisher.bind(publisherEndPoint);
-  cout << "Publisher endPoint " << publisherEndPoint << endl;
-  /*----------------------------------------*/
 
   /*--------------Server--------------------*/
   socket s_server(ctx, socket_type::rep); //Listening

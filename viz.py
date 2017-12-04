@@ -5,27 +5,30 @@ import zmq
 import thread
 import os.path
 
-def createGraph(info, window, clock):
+def createGraph(info, window, clock, fileName, flag):
     dot = Digraph(comment='BitTorrent', format='jpg')
 
-    info = info.split("\n")
-    for i in info:
-        if (i):
-            subs = i.split("->")[0]
-            myNode = subs.split(" ")[2]
-            print("myNode ", myNode)
-            dot.node(myNode)
+    if (flag):
+        info = info.split("\n")
+        for i in info:
+            if (i):
+                subs = i.split("->")[0]
+                myNode = subs.split(" ")[2]
+                print("myNode ", myNode)
+                dot.node(myNode)
 
-            i = i.replace(subs + "->", "")
-            neigh = i.split(".")[0]
-            neigh = neigh.split(",")[1]
-            neigh = neigh.split("sucessorId: ")[1]
-            print ("neigh ", neigh)
-            dot.edge(myNode, neigh)
+                i = i.replace(subs + "->", "")
+                neigh = i.split(".")[0]
+                neigh = neigh.split(",")[1]
+                neigh = neigh.split("sucessorId: ")[1]
+                print ("neigh ", neigh)
+                dot.edge(myNode, neigh)
+    else:
+        pass
 
-    dot.render('graph.gv', view=False)
+    dot.render(fileName, view=False)
 
-    background = pygame.image.load("graph.gv.jpg")
+    background = pygame.image.load(fileName + ".jpg")
     size = background.get_rect().size
     background = background.convert()
     window = pygame.display.set_mode(size, 0, 32)
@@ -43,6 +46,16 @@ def main():
     print("Connecting to " + endPoint)
     socket.connect(endPoint)
 
+    fingerSocket = context.socket(zmq.SUB)
+    fingerSocket.setsockopt(zmq.SUBSCRIBE, "")
+    endPoint = "tcp://localhost:5574"
+    print("Connecting to " + endPoint)
+    fingerSocket.connect(endPoint)
+
+    poller = zmq.Poller()
+    poller.register(socket, zmq.POLLIN)
+    poller.register(fingerSocket, zmq.POLLIN)
+
     # -------------------Pygame-----------------------
 
     pygame.init()
@@ -50,6 +63,7 @@ def main():
     pygame.mouse.set_visible(True)
     pygame.display.set_caption("BitTorrent")
     window = pygame.display.set_mode((500,500), 0, 32)
+    fingerWindow = pygame.display.set_mode((500,500), 0, 32)
 
     while(True):
         # -------------------Pygame-----------------------
@@ -58,11 +72,18 @@ def main():
         for event in events:
             if event.type == pygame.QUIT:
                 break
-
         # ----------------Zmq----------------------------
-        message = socket.recv()
-        print "Recieved %s" % message
-        createGraph(message, window, clock)
+        socks = dict(poller.poll())
+
+        if socket in socks and socks[socket] == zmq.POLLIN:
+            message = socket.recv()
+            print "Recieved %s" % message
+            createGraph(message, window, clock, 'graph.gv', True)
+
+        if fingerSocket in socks and socks[fingerSocket] == zmq.POLLIN:
+            message = socket.recv()
+            print "Recieved %s" % message
+            createGraph(message, fingerWindo, clock, 'finger-graph.gv', False)
 
     pygame.display.quit()
 

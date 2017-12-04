@@ -75,7 +75,11 @@ int main () {
                 m >> text;
                 cout << "TEXT: " << text << endl;
                 splitted = split(text, ':');
-
+                dbg(splitted[0]);
+                if (splitted[0] == "showFingerTable") {
+                  s_publisher.send(m);
+                  cout << "Sending to publisher: showFingerTable" << endl;
+                }
                 if (splitted[0] == "out"){
                     string ip_aux = splitted[1] + ":" + splitted[2] + ":" + splitted[3];
                     cout << "out " << ip_aux << endl;

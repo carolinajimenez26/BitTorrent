@@ -69,6 +69,14 @@ public:
 		cout << "------------------------------------------" << endl;
 	}
 
+	string getFingerTable() {
+		string finger = "";
+		for (auto& s : fingerTable) {
+			finger += s.first + "->" + s.second + "\n";
+		}
+		return finger;
+	}
+
 	pair<int, string> findSucessor(int _id) {
 		int size = fingerTable.size(), delta = 0, delta_min = INF, id_min = -1;
 		for (auto& s : fingerTable) {
