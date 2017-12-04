@@ -57,11 +57,14 @@ public:
 		fingerTable.erase (_id); 
 	}
 
-	pair<int, string> findSucessor(int _id) {
-		int size = fingerTable.size(), i = 0, delta = 0, delta_min = INF, id_min = -1;
-		for (auto& s : fingerTable) {
-			dbg(_id); dbg(s.first);
-			delta = _id - s.first;
+	pair<int, string> findSucessor(int _id, int sucessorId) {
+		int size = fingerTable.size(), i = 0, delta = 0, delta_min = INF, id_min = -1, temp = sucessorId;
+    /*if (_id < sucessorId)
+      return make_pair(sucessorId, fingerTable[sucessorId]);*/
+    for (auto& s : fingerTable) {
+      dbg(_id); dbg(s.first);
+      delta = _id - s.first;
+
 			if (delta < delta_min) {
 				delta_min = delta;
 				id_min = s.first;
@@ -69,11 +72,9 @@ public:
 			dbg(delta);
 			dbg(delta_min);
 			if (delta_min < 0) {
-				return make_pair(id_min, fingerTable[id_min]);
+				return make_pair(temp, fingerTable[temp]);
 			}
-			if (i + 1 == size) { // the last element
-				return make_pair(id_min, fingerTable[id_min]);
-			}
+      temp = s.first;
 		}
 	}
 

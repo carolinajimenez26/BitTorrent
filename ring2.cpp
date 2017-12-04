@@ -152,13 +152,16 @@ void ask(socket &s_client, Node &me, Node &predecessor, Node &sucessor, bool &fl
 
 pair<int, string> findSucessor(int id, Node me, Node sucessor) {
   cout << "findSucessor" << endl;
+  if (id > me.getId() && id < sucessor.getId()){
+    return make_pair(sucessor.getId(), sucessor.getEndPoint());
+  }
   if (me.getId() > sucessor.getId() and
       inTheRange(sucessor.getId(), me.getId(), id)) { // in the end of the range
     cout << "In the end of the range" << endl;
     string endPoint = sucessor.getIp() + ":" + sucessor.getPort();
     return make_pair(sucessor.getId(), endPoint);
   } else {
-    pair<int, string> new_sucessor = me.findSucessor(id); // id, endPoint
+    pair<int, string> new_sucessor = me.findSucessor(id, sucessor.getId()); // id, endPoint
     dbg(new_sucessor.first); dbg(new_sucessor.second);
     if (new_sucessor.first > id) { // found it!
       return new_sucessor;
@@ -199,7 +202,7 @@ void updateSucessor(Node &me, Node &sucessor, int id, string ip, string port) {
   sucessor.setId(id);
   sucessor.setIp(ip);
   sucessor.setPort(port);
-  me.insertInFingerTable(sucessor.getId(), sucessor.getIp(), sucessor.getPort());
+  me.insertInFingerTable(sucessor.getId()%30, sucessor.getIp(), sucessor.getPort());
 }
 
 int main(int argc, char** argv) {
@@ -325,7 +328,7 @@ int main(int argc, char** argv) {
           dbg(baseCase);
           if (baseCase) {
             sucessor.setId(toInt(id));
-            me.insertInFingerTable(sucessor.getId(), sucessor.getIp(), sucessor.getPort());
+            me.insertInFingerTable(sucessor.getId()%30, sucessor.getIp(), sucessor.getPort());
             predecessor.setId(toInt(id));
             enterToTheRing(me, sucessor, predecessor, enteredToRing);
             baseCase = false;
