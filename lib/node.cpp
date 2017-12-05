@@ -52,7 +52,7 @@ public:
   }
 
   void insertInFingerTable(int _id, string _ip, string _port) {
-    if (_id != id) fingerTable[_id] = _ip + ":" + _port;
+    if (_id != id and _id > 0) fingerTable[_id] = _ip + ":" + _port;
   }
 
   void removeFingerTable(int _id) {
@@ -74,8 +74,8 @@ public:
   string getFingerTable() {
     string finger = "";
     for (auto& s : fingerTable) {
-      finger += "I am " + toString(id) + "-> predecessorId: -1, sucessorId: " + toString(s.first) + 
-      ". Connected to: " + "tcp://" + s.second + 
+      finger += "I am " + toString(id) + "-> predecessorId: -1, sucessorId: " + toString(s.first) +
+      ". Connected to: " + "tcp://" + s.second +
       ". Listening on: tcp://" + ip + port + "\n";
     }
     return finger;
@@ -86,7 +86,7 @@ public:
     for (auto& s : fingerTable) {
       dbg(_id); dbg(s.first);
       delta = _id - s.first;
-      if (delta < delta_min and delta > 0) {
+      if (delta < delta_min and delta >= 0) {
         delta_min = delta;
         id_min = s.first;
       } if (delta < 0) break; // in order, I don't need the greates, only the nearest
