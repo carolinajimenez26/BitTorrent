@@ -14,7 +14,7 @@ using namespace zmqpp;
 #define NumberOfBits 5 // numbers between 0 and 2^5-1 = 31
 #define dbg(x) cout << #x << ": " << x << endl
 
-const int range_from = 0, range_to = 30;
+const int range_from = 0, range_to = 31;
 
 string toSusbcriber = "";
 
@@ -62,6 +62,10 @@ pair<int, string> findSucessor(int id, Node me, Node sucessor, Node predecessor)
   } else if (me.getId() > sucessor.getId() and
       inTheRange(sucessor.getId(), me.getId(), id)) { // in the end of the range
     cout << "In the end of the range" << endl;
+    endPoint = sucessor.getIp() + ":" + sucessor.getPort();
+    return make_pair(sucessor.getId(), endPoint);
+  } else if (sucessor.getId() > id and id > me.getId()) { // "My sucessor is your sucessor"
+    cout << "My sucessor is your sucessor" << endl;
     endPoint = sucessor.getIp() + ":" + sucessor.getPort();
     return make_pair(sucessor.getId(), endPoint);
   } else { // take a look in my fingerTable
@@ -444,7 +448,7 @@ int main(int argc, char** argv) {
           n << "ack";
           s_server.send(n);
           cout << "Ok" << endl;
-          if (pol.has_input(s_client)) { // MACHETICO
+          if (pol.has_input(s_client)) { 
             message tmp_m;
             string tmp;
             s_client.receive(tmp_m);
