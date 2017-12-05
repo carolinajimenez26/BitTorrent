@@ -5,7 +5,8 @@
 #include <thread>
 #include <chrono>
 #include <math.h>
-#include "node.cpp"
+#include "lib/node.cpp"
+#include <string>
 
 using namespace std;
 using namespace zmqpp;
@@ -34,37 +35,9 @@ void messageToSubscriber(string &text) {
   }
 }
 
-string toString(int n) {
-  stringstream ss;
-  ss << n;
-  string out;
-  ss >> out;
-  return out;
-}
-
-int toInt(string s) {
-  stringstream ss;
-  ss << s;
-  int out;
-  ss >> out;
-  return out;
-}
-
-vector<string> split(string s, char tok) { // split a string by a token especified
-  istringstream ss(s);
-  string token;
-  vector<string> v;
-
-  while(getline(ss, token, tok)) {
-    v.push_back(token);
-  }
-
-  return v;
-}
-
 bool inTheRange(int left, int right, int i) {
   dbg(left); dbg(right); dbg(i);
-  if ((i > left and i <= range_to) or (i >= range_from and i < right)) return true;
+  if ((i > right and i <= range_to) or (i >= range_from and i < left)) return true;
   return false;
 }
 
@@ -144,22 +117,31 @@ void ask(socket &s_client, Node &me, Node &predecessor, Node &sucessor, bool &fl
       cout << "*************************" << endl;
       cout << "Enter an option" << endl;
       cout << "1 - Exit" << endl;
+      cout << "2 - Show fingerTable" << endl;
+      cout << "3 - Show Ring" << endl;
       cout << "*************************" << endl;
       cin >> op;
       if (op == "1" or op == "Exit") {
         outOfTheRing(s_client, predecessor, sucessor, me);
+      } else if (op == "2" or op == "Show fingerTable"){
+        toSusbcriber = "showFingerTable:" + me.getFingerTable();
+
+      } else if (op == "3" or op == "Show Ring"){
+        toSusbcriber = "ask";
+      } else {
+        cout << "Invalid operation" << endl;
       }
     }
   }
 }
 
-pair<int, string> findSucessor(int id, Node me, Node sucessor) {
+pair<int, string> findSucessor(int id, Node me, Node sucessor, Node predecessor) {
   cout << "findSucessor" << endl;
   string endPoint = "";
   dbg(me.getId()); dbg(sucessor.getId());
   dbg((me.getId() > sucessor.getId()));
   dbg(inTheRange(sucessor.getId(), me.getId(), id));
-  if (me.getId() > id) { // I am your sucessor
+  if (me.getId() > id and id > predecessor.getId()) { // I am your sucessor
     cout << "I am your sucessor " << me.getId() << endl;
     endPoint = me.getIp() + ":" + me.getPort();
     return make_pair(me.getId(), endPoint);
@@ -198,7 +180,7 @@ pair<int, string> findSucessor(int id, Node me, Node sucessor) {
   }
 }
 
-void updateFingerTable(Node &me, Node &sucessor, bool &flag) {
+void updateFingerTable(Node &me, Node &sucessor, bool &flag, Node &predecessor) {
   chrono::seconds interval(10); // 10 seconds
   while (true) {
     if (flag) {
@@ -208,18 +190,18 @@ void updateFingerTable(Node &me, Node &sucessor, bool &flag) {
       int bit = 1;
       for (int i = 0; i < NumberOfBits; i++) {
         dbg(bit);
-        int needed = me.getId() + bit;
+        int needed = (me.getId() + bit) % range_to;
         bit = bit << 1;
         dbg(needed);
         if (needed != sucessor.getId()) {
-          pair<int, string> new_sucessor = findSucessor(needed, me, sucessor);
+          pair<int, string> new_sucessor = findSucessor(needed, me, sucessor, predecessor);
           vector<string> splitted = split(new_sucessor.second, ':');
           dbg(splitted[0]); dbg(splitted[1]);
           me.insertInFingerTable(new_sucessor.first, splitted[0], splitted[1]);
         }
       }
       me.showFingerTable();
-      toSusbcriber = "showFingerTable:" + me.getFingerTable();
+      //toSusbcriber = "showFingerTable:" + me.getFingerTable();
       this_thread::sleep_for(interval);
     }
   }
@@ -248,7 +230,7 @@ int main(int argc, char** argv) {
       return 1;
   }
 
-	Node me("*", argv[2], toInt(argv[5]));
+  Node me("*", argv[2], toInt(argv[5]));
   Node sucessor(argv[3], argv[4], -1);
   Node predecessor(argv[3], argv[4], -1);
 
@@ -277,7 +259,7 @@ int main(int argc, char** argv) {
   thread t1(messageToSubscriber, ref(toSusbcriber));
   thread t2(ask, ref(s_client), ref(me), ref(predecessor), ref(sucessor),
             ref(enteredToRing));
-  thread t3(updateFingerTable, ref(me), ref(sucessor), ref(enteredToRing));
+  //thread t3(updateFingerTable, ref(me), ref(sucessor), ref(enteredToRing), ref(predecessor));
   /*-------------------------------------------*/
 
   message m;
@@ -380,7 +362,7 @@ int main(int argc, char** argv) {
             n << "ack";
             s_server.send(n);
           } else {
-            pair<int, string> sucessorInformation = findSucessor(toInt(id), me, sucessor);
+            pair<int, string> sucessorInformation = findSucessor(toInt(id), me, sucessor, predecessor);
             dbg(sucessorInformation.first); dbg(sucessorInformation.second);
             message n;
             n << "This is your sucessor "
@@ -396,7 +378,7 @@ int main(int argc, char** argv) {
           string id;
           m >> id;
           dbg(id);
-          pair<int, string> sucessorInformation = findSucessor(toInt(id), me, sucessor);
+          pair<int, string> sucessorInformation = findSucessor(toInt(id), me, sucessor, predecessor);
           message n;
           n << "Found the sucessor. It is "
             << toString(sucessorInformation.first)
