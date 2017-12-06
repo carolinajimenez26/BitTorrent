@@ -11,22 +11,26 @@ using namespace zmqpp;
 #define dbg(x) cout << #x << ": " << x << endl
 
 string askInformation(vector<string> &ips, socket &s_client){
-
+    cout << "askInformation" << endl;
     cout << "-----------------------------------------------" << endl;
-
+    dbg(ips.size());
     message m, n;
     string ip, ans, msg;
     for (int i = 0; i < ips.size(); i++){
         ip = ips[i];
         s_client.connect(ip);
+        cout << "Connecting to " << ip << endl;
         m << "send me your information";
         s_client.send(m);
+        cout << "Sent: send me your information" << endl;
         s_client.receive(n);
         n >> ans;
+        cout << "Received: " << ans << endl;
         msg += ans;
         msg += "\n";
         cout << ans << endl;
         s_client.disconnect(ip);
+        cout << "Disconnecting from " << ip << endl;
     }
     cout << "-----------------------------------------------" << endl;
 
@@ -78,27 +82,25 @@ int main () {
                     message subs_m;
                     subs_m << information;
                     s_publisher.send(subs_m);
-                    cout << "Sending to publisher " << endl;
+                    cout << "Sending to publisher " << information << endl;
                 } else if (splitted[0] == "showFingerTable"){
                     m << "ack";
                     s_server.send(m);
-                    information = askInformation(ips, s_client); 
+                    information = askInformation(ips, s_client);
                     information += text.erase(0, 16);
                     dbg(information);
                     message subs_m;
                     subs_m << information;
                     s_publisher.send(subs_m);
-                    cout << "Sending to publisher " << endl;
-
-
+                    cout << "Sending to publisher " << information << endl;
                 } else if (text == "ask"){
                     m << "ack";
                     s_server.send(m);
-                    information = askInformation(ips, s_client); 
+                    information = askInformation(ips, s_client);
                     message subs_m;
                     subs_m << information;
                     s_publisher.send(subs_m);
-                    cout << "Sending to publisher " << endl;
+                    cout << "Sending to publisher " << information << endl;
                 } else {
                     ips.push_back(text);
                     cout << "Entered " << text << endl;
@@ -108,7 +110,7 @@ int main () {
                     message subs_m;
                     subs_m << information;
                     s_publisher.send(subs_m);
-                    cout << "Sending to publisher " << endl;
+                    cout << "Sending to publisher " << information << endl;
                 }
             }
         }
