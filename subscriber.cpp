@@ -72,7 +72,7 @@ int main () {
                             ips.erase(ips.begin() + i);
                         }
                     }
-                    m << "";
+                    m << "ack";
                     s_server.send(m);
                     information = askInformation(ips, s_client);
                     message subs_m;
@@ -80,7 +80,7 @@ int main () {
                     s_publisher.send(subs_m);
                     cout << "Sending to publisher " << endl;
                 } else if (splitted[0] == "showFingerTable"){
-                    m << "";
+                    m << "ack";
                     s_server.send(m);
                     information = askInformation(ips, s_client); 
                     information += text.erase(0, 16);
@@ -92,7 +92,7 @@ int main () {
 
 
                 } else if (text == "ask"){
-                    m << "";
+                    m << "ack";
                     s_server.send(m);
                     information = askInformation(ips, s_client); 
                     message subs_m;
@@ -102,7 +102,7 @@ int main () {
                 } else {
                     ips.push_back(text);
                     cout << "Entered " << text << endl;
-                    m << "";
+                    m << "ack";
                     s_server.send(m);
                     information = askInformation(ips, s_client);
                     message subs_m;
