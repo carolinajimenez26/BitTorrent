@@ -20,7 +20,7 @@ void messageToTerminal(socket &s_terminal, string text) {
   message m;
   m << text;
   s_terminal.send(m);
-  cout << "Sended to susbscriber" << endl;
+  cout << "Sent to susbscriber" << endl;
 }
 
 bool inTheRange(int left, int right, int i) {
@@ -77,7 +77,7 @@ pair<int, string> findSucessor(int id, Node me, Node sucessor, Node predecessor)
     m << "Looking for sucessor of"
       << toString(id);
     s.send(m);
-    cout << "Sended: Looking for sucessor of " << toString(id) << endl;
+    cout << "Sent: Looking for sucessor of " << toString(id) << endl;
     cout << "Asked to " << new_sucessor.first << " -> " << endPoint << endl;
     s.receive(n); // "Found the sucessor. It is "
     n >> ans >> new_id >> new_endPoint;
@@ -113,7 +113,8 @@ void updateFingerTable(Node &me, Node &sucessor, bool &flag, Node &predecessor) 
   // }
 }
 
-void outOfTheRing(socket &s_client, socket &s_terminal ,Node predecessor, Node sucessor, Node me) {
+void outOfTheRing(socket &s_client, socket &s_terminal, Node predecessor,
+                  Node sucessor, Node me) {
 
   message m, n;
 
@@ -126,17 +127,23 @@ void outOfTheRing(socket &s_client, socket &s_terminal ,Node predecessor, Node s
     exit(1);
 
   } else {
-    string id_s = toString(predecessor.getId());
-    string tmp1 = predecessor.getIp(), tmp2 = predecessor.getPort();
-    dbg(id_s); dbg(predecessor.getIp()); dbg(predecessor.getPort());
+    dbg(predecessor.getId()); dbg(predecessor.getIp()); dbg(predecessor.getPort());
     m << "I'm going out, this is your new predecessor"
-      << id_s
-      << tmp1
-      << tmp2;
-    s_client.receive(n);
+      << toString(predecessor.getId())
+      << predecessor.getIp()
+      << predecessor.getPort();
+    s_client.receive(n); // lost message
+    // if (pol.has_input(s_client)) {
+    //   message tmp_m;
+    //   string tmp;
+    //   s_client.receive(tmp_m);
+    //   tmp_m >> tmp;
+    //   dbg(tmp);
+    // }
     s_client.send(m);
-    cout << "Sended: I'm going out, this is your new predecessor" << endl;
+    cout << "Sent: I'm going out, this is your new predecessor" << endl;
     s_client.receive(n); // Ok
+    cout << "Received confirmation" << endl;
     if (sucessor.getEndPoint() != predecessor.getEndPoint()) {
         cout << "Disconnecting from " << sucessor.getEndPoint() << endl;
         s_client.disconnect(sucessor.getEndPoint());
@@ -148,8 +155,9 @@ void outOfTheRing(socket &s_client, socket &s_terminal ,Node predecessor, Node s
       << sucessor.getIp()
       << sucessor.getPort();
     s_client.send(m);
-    cout << "Sended: I'm going out, this is your new sucessor" << endl;
+    cout << "Sent: I'm going out, this is your new sucessor" << endl;
     s_client.receive(n); // Ok
+    cout << "Received confirmation" << endl;
     cout << "Disconnecting from " << predecessor.getEndPoint() << endl;
     s_client.disconnect(predecessor.getEndPoint());
 
@@ -188,16 +196,12 @@ void enterToTheRing(Node &me, Node &sucessor, Node &predecessor, bool &flag,
   }
 }
 
-void ask(socket &s_client, socket &s_terminal,Node &me, Node &predecessor, Node &sucessor, bool &flag) {
-
-  context ctx;
-  socket s(ctx, socket_type::req);
-  s.connect(sucessor.getEndPoint());
+void ask(socket &s_client, socket &s_terminal,Node &me, Node &predecessor,
+         Node &sucessor, bool &flag) {
 
   while (true) {
     if (flag) { // enteredToRing
-      message m;
-      string op;
+      string op = "";
       cout << "*************************" << endl;
       cout << "Enter an option" << endl;
       cout << "1 - Exit" << endl;
@@ -206,11 +210,10 @@ void ask(socket &s_client, socket &s_terminal,Node &me, Node &predecessor, Node 
       cout << "*************************" << endl;
       cin >> op;
       if (op == "1" or op == "Exit") {
-        outOfTheRing(s_client, s_terminal ,predecessor, sucessor, me);
+        outOfTheRing(s_client, s_terminal, predecessor, sucessor, me);
       } else if (op == "2" or op == "Show fingerTable"){
         string toTerminal = "showFingerTable:" + me.getFingerTable();
         messageToTerminal(s_terminal, toTerminal);
-
       } else if (op == "3" or op == "Show Ring"){
         string toTerminal = "ask";
         messageToTerminal(s_terminal, toTerminal);
@@ -277,7 +280,6 @@ int main(int argc, char** argv) {
   bool aux = true, enteredToRing = false, baseCase = false;
 
   /*---------------Threads---------------------*/
-  //thread t1(messageToTerminal, ref(toSusbcriber));
   thread t2(ask,ref(s_client), ref(s_terminal),ref(me), ref(predecessor), ref(sucessor),
             ref(enteredToRing));
   // thread t3(updateFingerTable, ref(me), ref(sucessor), ref(enteredToRing),
@@ -343,7 +345,7 @@ int main(int argc, char** argv) {
                 << me.getIp()
                 << me.getPort();
               s_client.send(n);
-              cout << "Sended: Now I am your sucessor "
+              cout << "Sent: Now I am your sucessor "
                    << me.getId() << me.getIp() << me.getPort() << endl;
               s_client.receive(l); // Ok
               s_client.disconnect(predecessor.getEndPoint());
@@ -378,6 +380,7 @@ int main(int argc, char** argv) {
           message n;
           n << information;
           s_server.send(n);
+          cout << "Sent my information" << endl;
         }
 
         if (ans == "Want to join. This is my information ") {
@@ -404,7 +407,7 @@ int main(int argc, char** argv) {
               << toString(sucessorInformation.first)
               << sucessorInformation.second;
             s_server.send(n);
-            cout << "Sended: This is your sucessor "
+            cout << "Sent: This is your sucessor "
                  << sucessorInformation.first << sucessorInformation.second << endl;
           }
         }
@@ -419,7 +422,7 @@ int main(int argc, char** argv) {
             << toString(sucessorInformation.first)
             << sucessorInformation.second;
           s_server.send(n);
-          cout << "Sended: Found the sucessor. It is "
+          cout << "Sent: Found the sucessor. It is "
                << sucessorInformation.first << sucessorInformation.second << endl;
         }
 
@@ -442,7 +445,7 @@ int main(int argc, char** argv) {
           message n;
           n << "ack"; // Ok
           s_server.send(n);
-          cout << "Sended: ack" << endl;
+          cout << "Sent: ack" << endl;
           s_client.disconnect(sucessor.getEndPoint());
           cout << "Disconnecting from " << sucessor.getEndPoint() << endl;
           me.removeFingerTable(sucessor.getId());
@@ -459,7 +462,7 @@ int main(int argc, char** argv) {
           n << "ack";
           s_server.send(n);
           cout << "Ok" << endl;
-          if (pol.has_input(s_client)) { 
+          if (pol.has_input(s_client)) {
             message tmp_m;
             string tmp;
             s_client.receive(tmp_m);
@@ -472,7 +475,7 @@ int main(int argc, char** argv) {
             message l, o;
             l << "Entered to the Ring" << id;
             s_client.send(l);
-            cout << "Sended" << endl;
+            cout << "Sent" << endl;
             s_client.receive(o);
             cout << "Received answere" << endl;
           }
@@ -486,6 +489,7 @@ int main(int argc, char** argv) {
           message n;
           n << "ack";
           s_server.send(n);
+          cout << "Sent: ack" << endl;
         }
 
         if (ans == "I'm going out, this is your new sucessor") {
@@ -493,11 +497,42 @@ int main(int argc, char** argv) {
           m >> id >> ip >> port;
           dbg(id); dbg(ip); dbg(port);
           s_client.disconnect(sucessor.getEndPoint());
+          cout << "Disconnecting from " << sucessor.getEndPoint() << endl;
+          me.removeFingerTable(sucessor.getId());
           updateSucessor(me, sucessor, toInt(id), ip, port);
           s_client.connect(sucessor.getEndPoint());
+          cout << "Connecting to " << sucessor.getEndPoint() << endl;
           message n;
           n << "ack";
           s_server.send(n);
+          cout << "Sent: ack" << endl;
+          if (me.getId() != sucessor.getId() and me.getId() != predecessor.getId()) {
+            n << "Update fingerTable" << me.getId(); // When it it going to stop
+            s_client.send(n);
+            cout << "Sent: Update fingerTable " << me.getId() << endl;
+            s_client.receive(n);
+            cout << "Received confirmation" << endl;
+          }
+        }
+
+        if (ans == "Update fingerTable") {
+          string id;
+          m >> id;
+          dbg(id);
+          message n;
+          n << "ack";
+          s_server.send(n);
+          if (me.getId() != toInt(id) and me.getId() != sucessor.getId() and
+              me.getId() != predecessor.getId()) {
+            updateFingerTable(me, sucessor, enteredToRing, predecessor);
+            cout << "Replying message" << endl;
+            message l, o;
+            l << "Update fingerTable" << id;
+            s_client.send(l);
+            cout << "Sent" << endl;
+            s_client.receive(o);
+            cout << "Received answere" << endl;
+          }
         }
       }
     }
