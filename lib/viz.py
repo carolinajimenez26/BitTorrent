@@ -6,7 +6,7 @@ import thread
 import os.path
 
 def createGraph(info, window, clock):
-    dot = Digraph(comment='BitTorrent', format='jpg')
+    dot = Digraph(comment='BitTorrent', format='jpg', engine = 'circo')
 
     info = info.split("\n")
     for i in info:
